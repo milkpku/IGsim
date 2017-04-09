@@ -18,7 +18,7 @@ IGSIM_INLINE void sim::average_onto_faces_mat(
   const Eigen::PlainObjectBase<DerivedF>& F, 
   Eigen::SparseMatrix<Scalar>& Proj)
 {
-  Proj.setZeros();
+  Proj.setZero();
   Proj.resize(F.rows(), V.rows());
 
   typedef Eigen::Triplet<Scalar> T;
@@ -32,5 +32,5 @@ IGSIM_INLINE void sim::average_onto_faces_mat(
     for(int i = 0; i < F.rows(); i++)
       proj_coeff.push_back(T(i, F(i, j), avg));
 
-  Proj.setfromTriplets(proj_coeff.begin(), proj_coeff.end());
+  Proj.setFromTriplets(proj_coeff.begin(), proj_coeff.end());
 }
