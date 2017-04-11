@@ -19,6 +19,7 @@
 #include <math.h>
 
 #define REPEAT_N 20
+#define NUM_EQ(A, B) EXPECT_LT(abs(A-B), 1e-10)
 
 TEST(neohookean_model, rigid_rotation)
 {
@@ -35,25 +36,25 @@ TEST(neohookean_model, rigid_rotation)
     Eigen::MatrixXd P, dPmu, dPlam;
 
     sim::neohookean_model(F, mu, lambda, energy);
-    EXPECT_EQ(energy, 0.0);
+	NUM_EQ(energy, 0.0);
 
     sim::neohookean_model(F, mu, lambda, energy, P);
-    EXPECT_EQ(energy, 0.0);
-    EXPECT_EQ(P.sum(), 0.0);
-    EXPECT_EQ(P.rows(), 3);
-    EXPECT_EQ(P.cols(), 3);
+	NUM_EQ(energy, 0.0);
+	NUM_EQ(P.sum(), 0.0);
+	NUM_EQ(P.rows(), 3);
+	NUM_EQ(P.cols(), 3);
 
     sim::neohookean_model(F, mu, lambda, energy, P, dPmu, dPlam);
-    EXPECT_EQ(energy, 0.0);
-    EXPECT_EQ(P.sum(), 0.0);
-    EXPECT_EQ(P.rows(), 3);
-    EXPECT_EQ(P.cols(), 3);
-    EXPECT_EQ(dPmu.sum(), 0.0);
-    EXPECT_EQ(dPmu.rows(), 3);
-    EXPECT_EQ(dPmu.cols(), 3);
-    EXPECT_EQ(dPlam.sum(), 0.0);
-    EXPECT_EQ(dPlam.rows(), 3);
-    EXPECT_EQ(dPlam.cols(), 3);
+	NUM_EQ(energy, 0.0);
+    NUM_EQ(P.sum(), 0.0);
+	NUM_EQ(P.rows(), 3);
+	NUM_EQ(P.cols(), 3);
+	NUM_EQ(dPmu.sum(), 0.0);
+	NUM_EQ(dPmu.rows(), 3);
+	NUM_EQ(dPmu.cols(), 3);
+	NUM_EQ(dPlam.sum(), 0.0);
+	NUM_EQ(dPlam.rows(), 3);
+	NUM_EQ(dPlam.cols(), 3);
   }
 }
 
