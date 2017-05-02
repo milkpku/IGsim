@@ -17,8 +17,8 @@
 
 namespace sim
 {
-  /*  Calculate the manifold volume (facet area for 2D manifold and tetrahedron
-   *  volume for 3D manifold)
+  /*  Calculate the manifold volume for each simplex (facet area for each 
+   *  triangle in 2D manifold and volume for each tetrahedron in 3D manifold)
    *
    *  Inputs:
    *    V #V by dim matrix of vertex coordinates
