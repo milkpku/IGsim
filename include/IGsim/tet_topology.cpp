@@ -26,8 +26,10 @@ IGSIM_INLINE void sim::tet_topology(
   /* construct undirected surface and its associate tet info */
   for(int i = 0; i < T.rows(); i++)
   {
-    Eigen::VectorXi t, id;
-    igl::sortrows(T.row(i).transpose(), true, t, id);
+    Eigen::VectorXi  id;
+	DerivedT unsort_t, t;
+	unsort_t = T.row(i).transpose();
+    igl::sortrows(unsort_t, true, t, id);
 
     TF.row(4 * i    ) << t(1), t(2), t(3), i, id(0);
     TF.row(4 * i + 1) << t(0), t(2), t(3), i, id(1);
@@ -42,15 +44,19 @@ IGSIM_INLINE void sim::tet_topology(
 
   /* construct topology matrix L */
   L = - DerivedL::Ones(T.rows(), T.cols());
-  auto surf = sort_TF.leftCols(3);
-  auto info = sort_TF.rightCols(2);
+  DerivedT surf = sort_TF.leftCols(3);
+  DerivedT info = sort_TF.rightCols(2);
   int count = 1;
   while (count < sort_TF.rows())
   {
-    if (surf.row(count).cwiseEqual(surf.row(count-1).all()))
+    if ((surf.row(count).array() == surf.row(count-1).array()).all())
     {
       L(info(count, 0), info(count, 1)) = info(count - 1, 0);
       L(info(count - 1, 0), info(count - 1, 1)) = info(count, 0);
+	  count += 2;
     }
+	else {
+		count++;
+	}
   }
 }
