@@ -15,6 +15,7 @@
 
 #include <boost/format.hpp>
 
+#include <iostream>
 #include <string>
 #include <fstream>
 
@@ -25,6 +26,11 @@ IGSIM_INLINE void sim::writeVTK(
   const Eigen::PlainObjectBase<DerivedT>& T)
 {
   std::ofstream out(filename, std::ofstream::out);
+  if (!out.is_open())
+  {
+    std::cerr << boost::format("fail to open file %s\n") % filename;
+    return;
+  }
   writeVTK(out, V, T);
   out.close();
 }
@@ -38,8 +44,13 @@ IGSIM_INLINE void sim::writeVTK(
   const Eigen::PlainObjectBase<DerivedVi>& V_info)
 {
   std::ofstream out(filename, std::ofstream::out);
+  if (!out.is_open())
+  {
+    std::cerr << boost::format("fail to open file %s\n") % filename;
+    return;
+  }
   writeVTK(out, V, T);
-  writeVTK(out, V.rows(), T.rows(), "attr", info_type, V_info);
+  writeVTK(out, V.rows(), T.rows(), true, "attr", info_type, V_info);
   out.close();
 }
 
@@ -83,21 +94,25 @@ IGSIM_INLINE void sim::writeVTK(
   std::ofstream& fout,
   const int V_size,
   const int T_size,
+  const bool header,
   const std::string name,
   const VTK_TYPE& info_type,
   const Eigen::PlainObjectBase<DerivedVi>& V_info)
 {
-  if (V_info.rows() == V_size)
+  if (header)
   {
-    fout << boost::format("POINT_DATA %d\n") % V_size;
-  }
-  else if (V_info.rows() == T_size)
-  {
-    fout << boost::format("CELL_DATA %d\n") % T_size;
-  }
-  else
-  {
-    assert(false && "no matching object for attribute");
+    if (V_info.rows() == V_size)
+    {
+      fout << boost::format("POINT_DATA %d\n") % V_size;
+    }
+    else if (V_info.rows() == T_size)
+    {
+      fout << boost::format("CELL_DATA %d\n") % T_size;
+    }
+    else
+    {
+      assert(false && "no matching object for attribute");
+    }
   }
   
   switch (info_type)

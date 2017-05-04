@@ -69,6 +69,7 @@ namespace sim
       std::ofstream& fout,
       const int V_size,
       const int T_size,
+      const bool header,
       const std::string name,
       const VTK_TYPE& info_type,
       const Eigen::PlainObjectBase<DerivedVi>& V_info);
