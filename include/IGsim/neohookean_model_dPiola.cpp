@@ -33,8 +33,10 @@ IGSIM_INLINE void sim::neohookean_model_dPiola(
   double logJ = log(J);
   
   DerivedF FinvT = F.inverse().transpose();
-  double tr = FinvT.dot(dF);
-  dP = Mu * dF + (Mu - Lam * logJ) * FinvT * dF * FinvT + Lam * tr * FinvT;
+  double tr = FinvT.cwiseProduct(dF).sum();
+  dP = Mu * dF 
+    + (Mu - Lam * logJ) * FinvT * dF.transpose() * FinvT 
+    + Lam * tr * FinvT;
 }
 
 template <
@@ -63,10 +65,10 @@ IGSIM_INLINE void sim::neohookean_model_dPiola(
   {
     assert(dF[i].cols() == 3 && dF[i].rows() == 3
       && "neohookean model only suport 3x3 deformation gradient");
-    double tr = FinvT.dot(dF[i]);
-    DeriveddP dP_tmp;
+    double tr = FinvT.cwiseProduct(dF[i]).sum();
+    DeriveddP_T dP_tmp;
     dP_tmp = Mu * dF[i] 
-        + (Mu - Lam * logJ) * FinvT * dF[i] * FinvT 
+        + (Mu - Lam * logJ) * FinvT * dF[i].transpose() * FinvT 
         + Lam * tr * FinvT;
     dP.push_back(dP_tmp);
   }

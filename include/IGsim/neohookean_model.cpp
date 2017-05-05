@@ -28,7 +28,7 @@ IGSIM_INLINE void sim::neohookean_model(
   double logJ = log(J);
   
   /* energy(F) = \mu/2 * (I_1 - log I_3 - 3) + \lambda/8 * log^2 I_3 */
-  energy = 0.5 * Mu * (I1 - logJ - 3) + 0.5 * Lam * logJ * logJ;
+  energy = 0.5 * Mu * (I1 - 2 * logJ - 3) + 0.5 * Lam * logJ * logJ;
 }
 
 
@@ -50,11 +50,11 @@ IGSIM_INLINE void sim::neohookean_model(
   double logJ = log(J);
 
   /* energy(F) = \mu/2 * (I_1 - log I_3 - 3) + \lambda/8 * log^2 I_3 */
-  energy = 0.5 * Mu * (I1 - logJ - 3) + 0.5 * Lam * logJ * logJ;
+  energy = 0.5 * Mu * (I1 - 2 * logJ - 3) + 0.5 * Lam * logJ * logJ;
 
   /* P(F) = \mu * (F - F^{-T}) + \lambda/2 * log I_3 * F^{-T} */
   DerivedF FinvT = F.inverse().transpose();
-  P = Mu * (F - FinvT) + 0.5 * Lam * logJ * FinvT;
+  P = Mu * (F - FinvT) + Lam * logJ * FinvT;
 }
 
 
@@ -79,12 +79,12 @@ IGSIM_INLINE void sim::neohookean_model(
   double logJ = log(J);
 
   /* energy(F) = \mu/2 * (I_1 - log I_3 - 3) + \lambda/8 * log^2 I_3 */
-  energy = 0.5 * Mu * (I1 - logJ - 3) + 0.5 * Lam * logJ * logJ;
+  energy = 0.5 * Mu * (I1 - 2 * logJ - 3) + 0.5 * Lam * logJ * logJ;
 
   /* P(F) = \mu * (F - F^{-T}) + \lambda/2 * log I_3 * F^{-T} */
   DerivedF FinvT = F.inverse().transpose();
   dPmu = F - FinvT;
-  dPlam = 0.5 * logJ * FinvT;
+  dPlam = logJ * FinvT;
   P = Mu * dPmu + Lam * dPlam;
 }
 

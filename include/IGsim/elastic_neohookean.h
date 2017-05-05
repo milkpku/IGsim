@@ -50,13 +50,13 @@ namespace sim
    */
   template <
     typename DerivedV, typename DerivedT, 
-	  typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
+    typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
     typename DerivedMu, typename DerivedLam,
     typename DerivedE, typename DerivedF>
   IGSIM_INLINE void elastic_neohookean(
     const Eigen::PlainObjectBase<DerivedV>& V,
     const Eigen::PlainObjectBase<DerivedT>& T, 
-	  const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
+    const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
     const Eigen::PlainObjectBase<DerivedW>& W,
     const Eigen::PlainObjectBase<DerivedMu>& Mu,
     const Eigen::PlainObjectBase<DerivedLam>& Lam,
@@ -75,13 +75,13 @@ namespace sim
    */
   template <
     typename DerivedV, typename DerivedT, 
-	  typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
+    typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
     typename DerivedMu, typename DerivedLam,
     typename DerivedE, typename DerivedF, typename ScalarK>
   IGSIM_INLINE void elastic_neohookean(
     const Eigen::PlainObjectBase<DerivedV>& V,
     const Eigen::PlainObjectBase<DerivedT>& T, 
-	  const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
+    const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
     const Eigen::PlainObjectBase<DerivedW>& W,
     const Eigen::PlainObjectBase<DerivedMu>& Mu,
     const Eigen::PlainObjectBase<DerivedLam>& Lam,
@@ -95,14 +95,14 @@ namespace sim
    */
   template <
     typename DerivedV, typename DerivedT, 
-	  typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
+    typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
     typename DerivedMu, typename DerivedLam,
     typename DerivedE, typename DerivedF, typename ScalarK,
     typename ScalarMu, typename ScalarLam>
   IGSIM_INLINE void elastic_neohookean(
     const Eigen::PlainObjectBase<DerivedV>& V,
     const Eigen::PlainObjectBase<DerivedT>& T, 
-	  const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
+    const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
     const Eigen::PlainObjectBase<DerivedW>& W,
     const Eigen::PlainObjectBase<DerivedMu>& Mu,
     const Eigen::PlainObjectBase<DerivedLam>& Lam,
@@ -200,11 +200,11 @@ namespace sim
    */
   template <
     typename DerivedV, typename DerivedT, 
-	  typename DerivedBm_T, typename DerivedBm_A, typename DerivedW>
+    typename DerivedBm_T, typename DerivedBm_A, typename DerivedW>
   IGSIM_INLINE void elastic_neohookean(
     const Eigen::PlainObjectBase<DerivedV>& V,
     const Eigen::PlainObjectBase<DerivedT>& T,
-	  std::vector<DerivedBm_T, DerivedBm_A>& Bm,
+    std::vector<DerivedBm_T, DerivedBm_A>& Bm,
     Eigen::PlainObjectBase<DerivedW>& W);
 }
 
