@@ -18,7 +18,7 @@
 #include <vector>
 
 template<typename DerivedT, typename DerivedF>
-IGSIM_INLINE void sim::boudary_facet(
+IGSIM_INLINE void sim::boundary_facets(
   const Eigen::PlainObjectBase<DerivedT>& T,
   Eigen::PlainObjectBase<DerivedF>& F)
 {
@@ -29,7 +29,7 @@ IGSIM_INLINE void sim::boudary_facet(
 template<
   typename DerivedT, typename DerivedTA, 
   typename DerivedF, typename DerivedFA>
-IGSIM_INLINE void sim::boudary_facet(
+IGSIM_INLINE void sim::boundary_facets(
   const Eigen::PlainObjectBase<DerivedT>& T,
   const Eigen::PlainObjectBase<DerivedTA>& TA,
   Eigen::PlainObjectBase<DerivedF>& F,
@@ -59,7 +59,7 @@ IGSIM_INLINE void sim::boudary_facet(
   }
   else if (T.cols() == 4) // tetrahedron mesh
   {
-    bound = DerivedT(T.rows() * 4, 2);
+    bound = DerivedT(T.rows() * 4, 3);
     bound_to_tet = Eigen::VectorXi(T.rows() * 4);
 
     for(int i = 0; i < T.rows(); ++i)
@@ -96,7 +96,7 @@ IGSIM_INLINE void sim::boudary_facet(
     auto b0 = sort_bound.row(ptr);
     auto b1 = sort_bound.row(ptr + 1);
 
-    if (b0.cwiseEqu(b1).all())
+    if (b0.cwiseEqual(b1).all())
     {
       ptr += 2;
     }
@@ -109,8 +109,8 @@ IGSIM_INLINE void sim::boudary_facet(
   if (ptr == I.size() - 1) unique_id.push_back(I(ptr));
 
   /* build F and FA */
-  F = DerivedF(unique_id.size(), bound.cols());
-  FA = DerivedFA(unique_id.size(), TA.cols());
+  F.resize(unique_id.size(), bound.cols());
+  FA.resize(unique_id.size(), TA.cols());
 
   for(int i = 0; i < unique_id.size(); ++i)
   {

@@ -28,7 +28,7 @@ namespace sim
    *    F #F by {2|3} matrix of ordered face/line, boundary of given T
    */
   template<typename DerivedT, typename DerivedF>
-  IGSIM_INLINE void boudary_facet(
+  IGSIM_INLINE void boundary_facets(
     const Eigen::PlainObjectBase<DerivedT>& T,
     Eigen::PlainObjectBase<DerivedF>& F);
   /*
@@ -41,7 +41,7 @@ namespace sim
   template<
     typename DerivedT, typename DerivedTA, 
     typename DerivedF, typename DerivedFA>
-  IGSIM_INLINE void boudary_facet(
+  IGSIM_INLINE void boundary_facets(
     const Eigen::PlainObjectBase<DerivedT>& T,
     const Eigen::PlainObjectBase<DerivedTA>& TA,
     Eigen::PlainObjectBase<DerivedF>& F,
