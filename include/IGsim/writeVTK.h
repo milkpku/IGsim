@@ -75,7 +75,7 @@ namespace sim
       const Eigen::PlainObjectBase<DerivedVi>& V_info);
 }
 
-#ifndef IGSIM_STATIC_LIBRARAY
+#ifndef IGSIM_STATIC_LIBRARY
 #   include "writeVTK.cpp"
 #endif
 

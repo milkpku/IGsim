@@ -48,7 +48,7 @@ namespace sim
     Eigen::PlainObjectBase<DerivedFA>& FA);
 }
 
-#ifndef IGSTATIC_LIBRARAY
+#ifndef IGSTATIC_LIBRARY
 #   include "boundary_facets.cpp"
 #endif
 

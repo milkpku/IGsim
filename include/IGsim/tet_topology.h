@@ -34,7 +34,7 @@ namespace sim
     Eigen::PlainObjectBase<DerivedL>& L);
 }
 
-#ifndef IGSIM_STATIC_LIBRARAY
+#ifndef IGSIM_STATIC_LIBRARY
 #   include "tet_topology.cpp"
 #endif
 
