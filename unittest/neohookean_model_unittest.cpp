@@ -21,8 +21,7 @@
 #include <math.h>
 #include <time.h>
 
-#define REPEAT_N 20
-#define NUM_EQ(A, B) EXPECT_LT(abs(A-B), 1e-10)
+#include "unittest_defines.h"
 
 TEST(neohookean_model, rigid_rotation)
 {
