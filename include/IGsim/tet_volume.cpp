@@ -37,5 +37,6 @@ template <typename DerivedV, typename DerivedT, typename DerivedVol>
 
     Vol(i) = Dm.determinant();
   }
+  Vol /= 6.0;
 }
 

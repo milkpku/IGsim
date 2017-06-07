@@ -28,13 +28,14 @@ IGSIM_INLINE void sim::manifold_volume(
   {
     assert(V.cols() == 3 && "only support 3D vertices");
     Vol = DerivedVol::Zero(F.rows());
-	  for (int i = 0; i < F.rows(); i++)
-	  {
-		  Eigen::Matrix3d tet;
-		  tet << V.row(F(i, 0)), V.row(F(i, 1)), V.row(F(i, 2));
-		  tet.rowwise() -= V.row(F(i, 3));
-		  Vol(i) = tet.determinant() / 6;
-	  }
+	for (int i = 0; i < F.rows(); i++)
+	{
+	  Eigen::Matrix3d tet;
+	  tet << V.row(F(i, 0)), V.row(F(i, 1)), V.row(F(i, 2));
+	  tet.rowwise() -= V.row(F(i, 3));
+	  Vol(i) = tet.determinant();
+	}
+	Vol /= 6.0;
   }
   else
   {
