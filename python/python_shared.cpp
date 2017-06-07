@@ -10,6 +10,8 @@ PYBIND11_PLUGIN(pysim){
     Python wrapper for IGsim
     ------------------------
       boundary_facets
+      manifold_volume
+      writeVTK
   )pysimdoc");
 
   python_export_sim(m);

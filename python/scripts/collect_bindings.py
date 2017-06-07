@@ -11,14 +11,31 @@ def collect_functions(path):
 
     return functions
 
+def collect_headers(path):
+    files = [f for f in os.listdir(path) if isfile(join(path, f))]
+
+    # filename should be "<function_name>.h"
+    headers = [f[:-2] for f in files if f.endswith(".h")]
+
+    return headers
 
 if __name__=="__main__":
 
-    path = "../py_sim"
+    py_path = "../py_sim"
+    header_path = "../../include/IGsim"
 
-    functions = collect_functions(path)
+    functions = collect_functions(py_path)
+    headers = collect_headers(header_path)
+
+    print("function detected:")
+    for f in functions:
+        print("-", f)
+
+    print("function need implement:")
+    for f in (set(headers) - set(functions)):
+        print("-", f)
+
     sim_temp = Template(filename="py_sim.mako")
-
     wh = open("py_sim.cpp", 'w')
     wh.write(sim_temp.render(functions = functions))
     wh.close()
