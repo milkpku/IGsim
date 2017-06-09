@@ -1,5 +1,5 @@
 import os
-from os.path import isfile, join
+from os.path import isfile, join, dirname, realpath
 
 from mako.template import Template
 
@@ -21,11 +21,12 @@ def collect_headers(path):
 
 if __name__=="__main__":
 
+    script_dir = dirname(realpath(__file__))
     py_path = "../py_sim"
     header_path = "../../include/IGsim"
 
-    functions = collect_functions(py_path)
-    headers = collect_headers(header_path)
+    functions = collect_functions(join(script_dir, py_path))
+    headers = collect_headers(join(script_dir, header_path))
 
     print("function detected:")
     for f in functions:
@@ -35,12 +36,12 @@ if __name__=="__main__":
     for f in (set(headers) - set(functions)):
         print("-", f)
 
-    sim_temp = Template(filename="py_sim.mako")
+    sim_temp = Template(filename=join(script_dir, "py_sim.mako"))
     wh = open("py_sim.cpp", 'w')
     wh.write(sim_temp.render(functions = functions))
     wh.close()
 
-    shared_temp = Template(filename="python_shared.mako")
+    shared_temp = Template(filename=join(script_dir,"python_shared.mako"))
     wh = open("python_shared.cpp", 'w')
     wh.write(shared_temp.render(functions = functions))
     wh.close()
