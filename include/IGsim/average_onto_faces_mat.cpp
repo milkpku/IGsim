@@ -28,9 +28,10 @@ IGSIM_INLINE void sim::average_onto_faces_mat(
 
   const Scalar avg = 1.0/F.cols();
   
-  for(int j = 0; j < F.cols(); j++)
-    for(int i = 0; i < F.rows(); i++)
-      proj_coeff.push_back(T(i, F(i, j), avg));
+  for(int j = 0; j < F.cols(); j++) {
+      for (int i = 0; i < F.rows(); i++)
+          proj_coeff.push_back(T(i, F(i, j), avg));
+  }
 
   Proj.setFromTriplets(proj_coeff.begin(), proj_coeff.end());
 }

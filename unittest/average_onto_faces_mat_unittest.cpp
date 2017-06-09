@@ -13,6 +13,7 @@
 #include <gtest/gtest.h>
 
 #include <Eigen/Dense>
+#include <igl/readOBJ.h>
 
 #include "unittest_defines.h"
 
@@ -21,25 +22,25 @@ TEST(average_onto_faces_mat, test) {
   Eigen::MatrixXd V;
   Eigen::MatrixXi F;
 
-  //TODO read obj file
+  //read obj file
+  igl::readOBJ("../shared/frog.obj", V, F);
   Eigen::SparseMatrix<double> A;
 
   sim::average_onto_faces_mat(V, F, A);
 
   for (int i = 0; i < REPEAT_N; ++i) {
     auto V_val = Eigen::VectorXd::Random(V.rows());
-    auto F_weight = Eigen::VectorXd::Random(F.rows());
+    auto F_avg = A * V_val;
 
-    double val1 = F_weight.dot(A * V_val);
-
-    double val2 = 0;
     for (int j = 0; j < F.rows(); ++j) {
-      auto f = F.row(i);
-      double e = F_weight(j) * (V_val(f(0)) + V_val(f(1)) + V_val(f(2)));
-      val2 += e / 3;
+      auto f = F.row(j);
+      double avg = 0;
+      for (int k = 0; k < F.cols(); ++k) {
+        avg += V_val(f(k));
+      }
+      avg /= F.cols();
+      NUM_EQ(avg, F_avg(j));
     }
-
-    NUM_EQ(val1, val2);
   }
 
 }

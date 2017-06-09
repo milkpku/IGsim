@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 2.8)
 
 PROJECT(unit_test)
 
-include_directories(C:/VC_env/include/)
-include_directories(/usr/include/ /usr/local/include/)
+if (WIN32)
+  include_directories(C:/VC_env/include/)
+  include_directories(/usr/include/ /usr/local/include/)
+endif(WIN32)
 
 find_package(Eigen)
 include_directories(${EIGEN_INCLUDE_DIRS})
@@ -14,12 +16,10 @@ include_directories(${LIBIGL_INCLUDE_DIR})
 enable_testing()
 find_package(GTest)
 if (GTEST_FOUND)
-
 else()
-    set(GTEST_BOTH_LIBRARIES C:/VC_env/lib64/gtest.lib
-                             C:/VC_env/lib64/gtest_main.lib
-            )
-endif (GTTEST_FOUND)
+  set(GTEST_BOTH_LIBRARIES C:/VC_env/lib64/gtest.lib
+                           C:/VC_env/lib64/gtest_main.lib)
+endif (GTEST_FOUND)
 include_directories(${GTEST_INCLUDE_DIRS})
 
 
