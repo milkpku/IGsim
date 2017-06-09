@@ -93,6 +93,7 @@ const char* __doc_sim_elastic_neohookean = R"sim_Qu8mg5v7(/*  Construct the enre
 */)sim_Qu8mg5v7";
 const char* __doc_sim_igsim_inline = R"sim_Qu8mg5v7()sim_Qu8mg5v7";
 const char* __doc_sim_manifold_harmonic_basis = R"sim_Qu8mg5v7(/*  Constrct the manifold harmonic bases for a manifold (V, F)
+*  Eigenvalues are orded by increasing abs() value
 *
 *  Inputs:
 *    V #V by dim matrix of vertex coordinates
@@ -100,12 +101,13 @@ const char* __doc_sim_manifold_harmonic_basis = R"sim_Qu8mg5v7(/*  Constrct the 
 *    k int, num of bases needed
 *
 *  Outputs:
-*    S k complex vector of eigenvalues
+*    S k complex vector of eigenvalues from small abs() to large
 *    U #V by k complex matrix of eigenvectors
 */
 /*
 *  Inputs:
-*    sigma double, band center
+*    sigma double, band center, from which the algorithm find closest
+*          eigenvalues and corresponding eigenvectors
 */)sim_Qu8mg5v7";
 const char* __doc_sim_manifold_volume = R"sim_Qu8mg5v7(/*  Calculate the manifold volume for each simplex (facet area for each
 *  triangle in 2D manifold and volume for each tetrahedron in 3D manifold)

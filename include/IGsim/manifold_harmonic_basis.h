@@ -18,6 +18,7 @@
 namespace sim
 {
   /*  Constrct the manifold harmonic bases for a manifold (V, F)
+   *  Eigenvalues are orded by increasing abs() value
    *
    *  Inputs:
    *    V #V by dim matrix of vertex coordinates
@@ -25,7 +26,7 @@ namespace sim
    *    k int, num of bases needed
    *
    *  Outputs:
-   *    S k complex vector of eigenvalues
+   *    S k complex vector of eigenvalues from small abs() to large
    *    U #V by k complex matrix of eigenvectors
    */
   template <typename DerivedV, typename DerivedF>
@@ -37,7 +38,8 @@ namespace sim
     Eigen::MatrixXcd& U);
   /*
    *  Inputs:
-   *    sigma double, band center
+   *    sigma double, band center, from which the algorithm find closest 
+   *          eigenvalues and corresponding eigenvectors
   */
   template <typename DerivedV, typename DerivedF>
   IGSIM_INLINE void manifold_harmonic_basis(

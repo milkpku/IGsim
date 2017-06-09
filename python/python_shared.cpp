@@ -9,8 +9,11 @@ PYBIND11_PLUGIN(pysim){
   py::module m("pysim", R"pysimdoc(
     Python wrapper for IGsim
     ------------------------
+      average_onto_faces_mat
       boundary_facets
+      manifold_harmonic_basis
       manifold_volume
+      tet_topology
       writeVTK
   )pysimdoc");
 

@@ -10,7 +10,7 @@
  */
 
 #include "average_onto_faces_mat.h"
-
+#include <vector>
 
 template <typename DerivedV, typename DerivedF, typename Scalar>
 IGSIM_INLINE void sim::average_onto_faces_mat(
@@ -18,8 +18,8 @@ IGSIM_INLINE void sim::average_onto_faces_mat(
   const Eigen::PlainObjectBase<DerivedF>& F, 
   Eigen::SparseMatrix<Scalar>& Proj)
 {
-  Proj.setZero();
   Proj.resize(F.rows(), V.rows());
+  Proj.reserve(F.size());
 
   typedef Eigen::Triplet<Scalar> T;
   std::vector<T> proj_coeff;
@@ -27,7 +27,7 @@ IGSIM_INLINE void sim::average_onto_faces_mat(
   proj_coeff.reserve(F.size());
 
   const Scalar avg = 1.0/F.cols();
-
+  
   for(int j = 0; j < F.cols(); j++)
     for(int i = 0; i < F.rows(); i++)
       proj_coeff.push_back(T(i, F(i, j), avg));
