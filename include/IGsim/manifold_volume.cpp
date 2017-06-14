@@ -22,20 +22,21 @@ IGSIM_INLINE void sim::manifold_volume(
   if (F.cols() == 3)
   {
     igl::doublearea(V, F, Vol);
-    Vol /= 2;
+    Vol /= 2.0;
   }
   else if (F.cols() == 4)
   {
     assert(V.cols() == 3 && "only support 3D vertices");
     Vol = DerivedVol::Zero(F.rows());
-	for (int i = 0; i < F.rows(); i++)
-	{
-	  Eigen::Matrix3d tet;
-	  tet << V.row(F(i, 0)), V.row(F(i, 1)), V.row(F(i, 2));
-	  tet.rowwise() -= V.row(F(i, 3));
-	  Vol(i) = tet.determinant();
-	}
-	Vol /= 6.0;
+	  for (int i = 0; i < F.rows(); i++)
+	  {
+      const Eigen::RowVector3d & a = V.row(F(i,0));
+      const Eigen::RowVector3d & b = V.row(F(i,1));
+      const Eigen::RowVector3d & c = V.row(F(i,2));
+      const Eigen::RowVector3d & d = V.row(F(i,3));
+	    Vol(i) = (a-d).dot((b-d).cross(c-d));
+	  }
+	  Vol /= 6.0;
   }
   else
   {
