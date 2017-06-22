@@ -327,7 +327,7 @@ template <
   typename DerivedV, typename DerivedT,
   typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
   typename DerivedMu, typename DerivedLam,
-  typename DerivedE, typename DerivedF, typename ScalarK,
+    typename DerivedFMu, typename DerivedFLam,
   typename ScalarMu, typename ScalarLam>
   IGSIM_INLINE void sim::elastic_neohookean(
     const Eigen::PlainObjectBase<DerivedV>& V,
@@ -336,9 +336,8 @@ template <
     const Eigen::PlainObjectBase<DerivedW>& W,
     const Eigen::PlainObjectBase<DerivedMu>& _Mu,
     const Eigen::PlainObjectBase<DerivedLam>& _Lam,
-    DerivedE&  energy,
-    Eigen::PlainObjectBase<DerivedF>& f,
-    Eigen::SparseMatrix<ScalarK>& K,
+    Eigen::PlainObjectBase<DerivedFMu>& fmu,
+    Eigen::PlainObjectBase<DerivedFLam>& flam,
     Eigen::SparseMatrix<ScalarMu>& Kmu,
     Eigen::SparseMatrix<ScalarLam>& Klam)
 {
@@ -354,7 +353,7 @@ template <
   if (_Mu.size() == V.rows())
   {
     /* average parameter \mu and \lambda from vertices to tetrahedrons */
-    Eigen::SparseMatrix<DerivedE> Proj;
+    Eigen::SparseMatrix<double> Proj;
     sim::average_onto_faces_mat(V, T, Proj);
 
     Mu = Proj * _Mu;
@@ -372,10 +371,11 @@ template <
   }
   typedef Eigen::Matrix3d Mat3;
 
-  /* compute energy, f, K */
-  neohookean_model(V, T, Bm, W, Mu, Lam, energy, f, K);
+  /* initialize fmu and flam */
+  fmu.resize(Mu.size());
+  flam.resize(Lam.size());
 
-  /* compute Kmu and Klam */
+  /* initialize Kmu and Klam */
   typedef Eigen::Triplet<ScalarMu> Tmu;
   Kmu.setZero();
   Kmu.resize(V.size(), Mu.size());
@@ -403,11 +403,17 @@ template <
     F = Ds_t.transpose() * Bm[i];
 
     /* call neohookean model to get dPmu, dPlam */
-    DerivedE tmp_e;
-    Mat3 P, dPmu, dPlam;
-    sim::neohookean_model(F, Mu(i), Lam(i), tmp_e, P, dPmu, dPlam);
+    ScalarMu demu;
+    ScalarLam delam;
+    Mat3 dPmu, dPlam;
+    sim::neohookean_model(F, Mu(i), Lam(i), demu, delam, dPmu, dPlam);
     int num_V = V.rows();
 
+    /* fill in fmu and flam */
+    fmu(i) = demu;
+    flam(i) = delam;
+
+    ////////////////////// fill in Kmu /////////////////////
     Mat3 _dHmu = - W(i) * dPmu * Bm[i].transpose();
     Mat3 dHmu = _dHmu.transpose();
     /* compute dH -> df, j = 0, 1, 2 */
@@ -425,6 +431,7 @@ template <
       Kmu_coeff.push_back(Tmu(targ_addr, i, dfmu_3(k)));
     }
     
+    ///////////////////// fill in Klam /////////////////////
     Mat3 _dHlam = - W(i) * dPlam * Bm[i].transpose();
     Mat3 dHlam = _dHlam.transpose();
     /* compute dH -> df, j = 0, 1, 2 */
@@ -551,7 +558,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
 template <
   typename DerivedV, typename DerivedVinit, typename DerivedT,
   typename DerivedMu, typename DerivedLam,
-  typename DerivedE, typename DerivedF, typename ScalarK,
+  typename DerivedFMu, typename DerivedFLam,
   typename ScalarMu, typename ScalarLam>
 IGSIM_INLINE void sim::elastic_neohookean(
   const Eigen::PlainObjectBase<DerivedV>& V,
@@ -559,9 +566,8 @@ IGSIM_INLINE void sim::elastic_neohookean(
   const Eigen::PlainObjectBase<DerivedT>& T, 
   const Eigen::PlainObjectBase<DerivedMu>& Mu,
   const Eigen::PlainObjectBase<DerivedLam>& Lam,
-  DerivedE&  energy,
-  Eigen::PlainObjectBase<DerivedF>& f,
-  Eigen::SparseMatrix<ScalarK>& K,
+  Eigen::PlainObjectBase<DerivedFMu>& fmu,
+  Eigen::PlainObjectBase<DerivedFLam>& flam,
   Eigen::SparseMatrix<ScalarMu>& Kmu,
   Eigen::SparseMatrix<ScalarLam>& Klam)
 {
@@ -572,7 +578,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
   /* precomputing Bm and W */
   elastic_neohookean(Vinit, T, Bm, W);
 
-  elastic_neohookean(V, T, Bm, W, Mu, Lam, energy, f, K, Kmu, Klam);
+  elastic_neohookean(V, T, Bm, W, Mu, Lam, fmu, flam, Kmu, Klam);
 }
 
 #ifdef IGSIM_STATIC_LIBRARY

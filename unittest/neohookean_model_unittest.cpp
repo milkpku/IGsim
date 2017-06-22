@@ -34,7 +34,7 @@ TEST(neohookean_model, rigid_rotation)
     double mu = 1;
     double lambda = 1;
 
-    double energy;
+    double energy, demu, delam;
     Eigen::MatrixXd P, dPmu, dPlam;
 
     sim::neohookean_model(F, mu, lambda, energy);
@@ -46,11 +46,9 @@ TEST(neohookean_model, rigid_rotation)
     NUM_EQ(P.rows(), 3);
     NUM_EQ(P.cols(), 3);
 
-    sim::neohookean_model(F, mu, lambda, energy, P, dPmu, dPlam);
-    NUM_EQ(energy, 0.0);
-    NUM_EQ(P.sum(), 0.0);
-    NUM_EQ(P.rows(), 3);
-    NUM_EQ(P.cols(), 3);
+    sim::neohookean_model(F, mu, lambda, demu, delam, dPmu, dPlam);
+	NUM_EQ(demu, 0.0);
+	NUM_EQ(delam, 0.0);
     NUM_EQ(dPmu.sum(), 0.0);
     NUM_EQ(dPmu.rows(), 3);
     NUM_EQ(dPmu.cols(), 3);
@@ -167,45 +165,22 @@ TEST(neohookean_model, increasing_material)
     /* random material */
     double mu = scale * rand() / RAND_MAX;
     double lambda= scale * rand() / RAND_MAX;
-    double energy;
-    sim::neohookean_model(F, mu, lambda, energy);
 
+    double energy, demu, delam;
     Eigen::MatrixXd P, dPmu, dPlam;
-    sim::neohookean_model(F, mu, lambda, energy, P, dPmu, dPlam);
+    sim::neohookean_model(F, mu, lambda, energy, P);
 
-    /* test dPmu */
-    for(int j = 0; j <3; j++)
-      for(int k = 0; k < 3; k++)
-      {
-        double test_step = mu * test_ratio;
+    sim::neohookean_model(F, mu, lambda, demu, delam, dPmu, dPlam);
 
-        double test_energy;
-        Eigen::MatrixXd test_P;
-        sim::neohookean_model(F, mu + test_step, lambda, test_energy, test_P);
+    // since energy and P are linear to Mu and Lam
+    // energy = Mu * demu + Lam * dlam
+    // P = Mu * dPmu + Lam * dPlam
 
-        double error = (test_P - P - test_step * dPmu).squaredNorm();
-        double base = (test_P - P).squaredNorm();
+    /* test demu, delam */
+    NUM_EQ( mu * demu + lambda * delam, energy);
 
-        double error_ratio = error / base;
-        EXPECT_LT(abs(error_ratio), 1e-10);
-      }
-
-    /* test dPlam */
-    for(int j = 0; j <3; j++)
-      for(int k = 0; k < 3; k++)
-      {
-        double test_step = lambda * test_ratio;
-
-        double test_energy;
-        Eigen::MatrixXd test_P;
-        sim::neohookean_model(F, mu, lambda + test_step, test_energy, test_P);
-
-        double error = (test_P - P - test_step * dPlam).squaredNorm();
-        double base = (test_P - P).squaredNorm();
-
-        double error_ratio = error / base;
-        EXPECT_LT(abs(error_ratio), 1e-10);
-      }
-
+    /* test dPmu, dPlam */
+    auto Perr = P - mu * dPmu - lambda * dPlam;
+    NUM_EQ( Perr.squaredNorm(), 0);
   }
 }

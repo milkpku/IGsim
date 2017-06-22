@@ -89,15 +89,17 @@ namespace sim
     Eigen::PlainObjectBase<DerivedF>& f,
     Eigen::SparseMatrix<ScalarK>& K);
    /* Outputs:
-   *    Kmu  (3 * #V) by #Mu sparse matrix of gradiant of force on \mu
-   *    Klam (3 * #V) by #Lam sparse matrix of gradiant of force on \lambda
-   *      both Kmu and Klam correspond to df defined above.
-   */
+    *   fmu  #Mu vector of gradient of energy on \mu
+    *   flam #Lam vector of gradient of energy on \lambda
+    *   Kmu  (3 * #V) by #Mu sparse matrix of gradiant of force on \mu
+    *   Klam (3 * #V) by #Lam sparse matrix of gradiant of force on \lambda
+    *      both Kmu and Klam correspond to df defined above.
+    */
   template <
     typename DerivedV, typename DerivedT, 
     typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
     typename DerivedMu, typename DerivedLam,
-    typename DerivedE, typename DerivedF, typename ScalarK,
+    typename DerivedFMu, typename DerivedFLam,
     typename ScalarMu, typename ScalarLam>
   IGSIM_INLINE void elastic_neohookean(
     const Eigen::PlainObjectBase<DerivedV>& V,
@@ -106,9 +108,8 @@ namespace sim
     const Eigen::PlainObjectBase<DerivedW>& W,
     const Eigen::PlainObjectBase<DerivedMu>& Mu,
     const Eigen::PlainObjectBase<DerivedLam>& Lam,
-    DerivedE&  energy,
-    Eigen::PlainObjectBase<DerivedF>& f,
-    Eigen::SparseMatrix<ScalarK>& K,
+    Eigen::PlainObjectBase<DerivedFMu>& fmu,
+    Eigen::PlainObjectBase<DerivedFLam>& flam,
     Eigen::SparseMatrix<ScalarMu>& Kmu,
     Eigen::SparseMatrix<ScalarLam>& Klam);
 
@@ -168,13 +169,15 @@ namespace sim
     Eigen::PlainObjectBase<DerivedF>& f,
     Eigen::SparseMatrix<ScalarK>& K);
    /* Outputs:
-   *    Kmu  (3 * #V) by #Mu sparse matrix of gradiant of force on \mu
-   *    Klam (3 * #V) by #Lam sparse matrix of gradiant of force on \lambda
-   */
+    *   fmu  #Mu vector of gradient of energy on \mu
+    *   flam #Lam vector of gradient of energy on \lambda
+    *   Kmu  (3 * #V) by #Mu sparse matrix of gradiant of force on \mu
+    *   Klam (3 * #V) by #Lam sparse matrix of gradiant of force on \lambda
+    */
   template <
     typename DerivedV, typename DerivedVinit, typename DerivedT,
     typename DerivedMu, typename DerivedLam,
-    typename DerivedE, typename DerivedF, typename ScalarK,
+    typename DerivedFMu, typename DerivedFLam,
     typename ScalarMu, typename ScalarLam>
   IGSIM_INLINE void elastic_neohookean(
     const Eigen::PlainObjectBase<DerivedV>& V,
@@ -182,9 +185,8 @@ namespace sim
     const Eigen::PlainObjectBase<DerivedT>& T, 
     const Eigen::PlainObjectBase<DerivedMu>& Mu,
     const Eigen::PlainObjectBase<DerivedLam>& Lam,
-    DerivedE&  energy,
-    Eigen::PlainObjectBase<DerivedF>& f,
-    Eigen::SparseMatrix<ScalarK>& K,
+    Eigen::PlainObjectBase<DerivedFMu>& fmu,
+    Eigen::PlainObjectBase<DerivedFLam>& flam,
     Eigen::SparseMatrix<ScalarMu>& Kmu,
     Eigen::SparseMatrix<ScalarLam>& Klam);
 

@@ -58,19 +58,21 @@ namespace sim
     ScalarE& energy,
     Eigen::PlainObjectBase<DerivedP>& P);
   /*  Outputs:
+   *    demu scalar, d(energy) by dmu
+   *    delam scalar, d(energy) by dlam
    *    dPmu  3 by 3 matrix of dPiola tensor by dmu
    *    dPlam 3 by 3 matrix of dPiola tensor by dlam
    */
   template < 
     typename DerivedF, typename ScalarMu, typename ScalarLam, 
-    typename ScalarE, typename DerivedP, 
+    typename ScalarDmu, typename ScalarDlam,
     typename DerivedPmu, typename DerivedPlam>
   IGSIM_INLINE void neohookean_model(
     const Eigen::PlainObjectBase<DerivedF>& F,
     const ScalarMu& Mu,
     const ScalarLam& Lam,
-    ScalarE& energy,
-    Eigen::PlainObjectBase<DerivedP>& P,
+    ScalarDmu&  demu,
+    ScalarDlam& delam,
     Eigen::PlainObjectBase<DerivedPmu>& dPmu,
     Eigen::PlainObjectBase<DerivedPlam>& dPlam);
 }
