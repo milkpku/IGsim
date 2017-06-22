@@ -44,22 +44,22 @@ IGSIM_INLINE void sim::elastic_neohookean(
   DerivedLam Lam;
   if (_Mu.size() == V.rows())
   {
-	  /* average parameter \mu and \lambda from vertices to tetrahedrons */
-	  Eigen::SparseMatrix<DerivedE> Proj;
-	  sim::average_onto_faces_mat(V, T, Proj);
+    /* average parameter \mu and \lambda from vertices to tetrahedrons */
+    Eigen::SparseMatrix<DerivedE> Proj;
+    sim::average_onto_faces_mat(V, T, Proj);
 
-	  Mu = Proj * _Mu;
-	  Lam = Proj * _Lam;
+    Mu = Proj * _Mu;
+    Lam = Proj * _Lam;
   }
   else if (_Mu.size() == T.rows())
   {
-	  Mu = _Mu;
-	  Lam = _Lam;
+    Mu = _Mu;
+    Lam = _Lam;
   }
   else
   {
-	  assert(false && "Mu size missmatch V.rows() and T.rows()");
-	  return;
+    assert(false && "Mu size missmatch V.rows() and T.rows()");
+    return;
   }
   typedef Eigen::Matrix3d Mat3;
 
@@ -83,7 +83,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
 
     /* accumulate energy */
     energy += W(i) * tmp_e;
-	if (energy != energy) return;
+  if (energy != energy) return;
   }
  
 }
@@ -115,21 +115,21 @@ IGSIM_INLINE void sim::elastic_neohookean(
   if (_Mu.size() == V.rows())
   {
     /* average parameter \mu and \lambda from vertices to tetrahedrons */
-	Eigen::SparseMatrix<DerivedE> Proj;
-	sim::average_onto_faces_mat(V, T, Proj);
+  Eigen::SparseMatrix<DerivedE> Proj;
+  sim::average_onto_faces_mat(V, T, Proj);
 
-	Mu = Proj * _Mu;
-	Lam = Proj * _Lam;
+  Mu = Proj * _Mu;
+  Lam = Proj * _Lam;
   }
   else if (_Mu.size() == T.rows())
   {
-	Mu = _Mu;
-	Lam = _Lam;
+  Mu = _Mu;
+  Lam = _Lam;
   }
   else
   {
-	assert(false && "Mu size missmatch V.rows() and T.rows()");
-	return;
+  assert(false && "Mu size missmatch V.rows() and T.rows()");
+  return;
   }
   typedef Eigen::Matrix3d Mat3;
 
@@ -156,7 +156,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
     
     /* accumulate energy */
     energy += W(i) * tmp_e;
-	if (energy != energy) return;
+  if (energy != energy) return;
 
     /* accumulate forces */
     Mat3 _H = - W(i) * P * Bm[i].transpose();
@@ -205,13 +205,13 @@ IGSIM_INLINE void sim::elastic_neohookean(
   }
   else if (_Mu.size() == T.rows())
   {
-	Mu = _Mu;
-	Lam = _Lam;
+  Mu = _Mu;
+  Lam = _Lam;
   }
   else
   {
-	assert(false && "Mu size missmatch V.rows() and T.rows()");
-	return;
+  assert(false && "Mu size missmatch V.rows() and T.rows()");
+  return;
   }
   typedef Eigen::Matrix3d Mat3;
 
@@ -246,7 +246,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
     
     /* accumulate energy */
     energy += W(i) * tmp_e;
-	if (energy != energy) return;
+  if (energy != energy) return;
 
     /* accumulate forces */
     Mat3 _H = - W(i) * P * Bm[i].transpose();
@@ -324,23 +324,23 @@ IGSIM_INLINE void sim::elastic_neohookean(
 }
 
 template <
-	typename DerivedV, typename DerivedT,
-	typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
-	typename DerivedMu, typename DerivedLam,
-	typename DerivedE, typename DerivedF, typename ScalarK,
-	typename ScalarMu, typename ScalarLam>
-	IGSIM_INLINE void sim::elastic_neohookean(
-		const Eigen::PlainObjectBase<DerivedV>& V,
-		const Eigen::PlainObjectBase<DerivedT>& T,
-		const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
-		const Eigen::PlainObjectBase<DerivedW>& W,
-		const Eigen::PlainObjectBase<DerivedMu>& _Mu,
-		const Eigen::PlainObjectBase<DerivedLam>& _Lam,
-		DerivedE&  energy,
+  typename DerivedV, typename DerivedT,
+  typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
+  typename DerivedMu, typename DerivedLam,
+  typename DerivedE, typename DerivedF, typename ScalarK,
+  typename ScalarMu, typename ScalarLam>
+  IGSIM_INLINE void sim::elastic_neohookean(
+    const Eigen::PlainObjectBase<DerivedV>& V,
+    const Eigen::PlainObjectBase<DerivedT>& T,
+    const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
+    const Eigen::PlainObjectBase<DerivedW>& W,
+    const Eigen::PlainObjectBase<DerivedMu>& _Mu,
+    const Eigen::PlainObjectBase<DerivedLam>& _Lam,
+    DerivedE&  energy,
     Eigen::PlainObjectBase<DerivedF>& f,
-		Eigen::SparseMatrix<ScalarK>& K,
-		Eigen::SparseMatrix<ScalarMu>& Kmu,
-		Eigen::SparseMatrix<ScalarLam>& Klam)
+    Eigen::SparseMatrix<ScalarK>& K,
+    Eigen::SparseMatrix<ScalarMu>& Kmu,
+    Eigen::SparseMatrix<ScalarLam>& Klam)
 {
   using namespace std;
   assert(V.cols() == 3 && "Vertices dim must be 3");
@@ -353,22 +353,22 @@ template <
   DerivedLam Lam;
   if (_Mu.size() == V.rows())
   {
-	  /* average parameter \mu and \lambda from vertices to tetrahedrons */
-	  Eigen::SparseMatrix<DerivedE> Proj;
-	  sim::average_onto_faces_mat(V, T, Proj);
+    /* average parameter \mu and \lambda from vertices to tetrahedrons */
+    Eigen::SparseMatrix<DerivedE> Proj;
+    sim::average_onto_faces_mat(V, T, Proj);
 
-	  Mu = Proj * _Mu;
-	  Lam = Proj * _Lam;
+    Mu = Proj * _Mu;
+    Lam = Proj * _Lam;
   }
   else if (_Mu.size() == T.rows())
   {
-	  Mu = _Mu;
-	  Lam = _Lam;
+    Mu = _Mu;
+    Lam = _Lam;
   }
   else
   {
-	  assert(false && "Mu size missmatch V.rows() and T.rows()");
-	  return;
+    assert(false && "Mu size missmatch V.rows() and T.rows()");
+    return;
   }
   typedef Eigen::Matrix3d Mat3;
 

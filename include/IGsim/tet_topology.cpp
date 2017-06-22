@@ -27,8 +27,8 @@ IGSIM_INLINE void sim::tet_topology(
   for(int i = 0; i < T.rows(); i++)
   {
     Eigen::VectorXi  id;
-	DerivedT unsort_t, t;
-	unsort_t = T.row(i).transpose();
+  DerivedT unsort_t, t;
+  unsort_t = T.row(i).transpose();
     igl::sortrows(unsort_t, true, t, id);
 
     TF.row(4 * i    ) << t(1), t(2), t(3), i, id(0);
@@ -53,10 +53,10 @@ IGSIM_INLINE void sim::tet_topology(
     {
       L(info(count, 0), info(count, 1)) = info(count - 1, 0);
       L(info(count - 1, 0), info(count - 1, 1)) = info(count, 0);
-	  count += 2;
+    count += 2;
     }
-	else {
-		count++;
-	}
+  else {
+    count++;
+  }
   }
 }

@@ -43,12 +43,12 @@ namespace sim
   */
   template <typename DerivedV, typename DerivedF>
   IGSIM_INLINE void manifold_harmonic_basis(
-	  const Eigen::PlainObjectBase<DerivedV>& V,
-	  const Eigen::PlainObjectBase<DerivedF>& F,
-	  const int& k,
-	  const double& sigma,
-	  Eigen::VectorXcd& S,
-	  Eigen::MatrixXcd& U);
+    const Eigen::PlainObjectBase<DerivedV>& V,
+    const Eigen::PlainObjectBase<DerivedF>& F,
+    const int& k,
+    const double& sigma,
+    Eigen::VectorXcd& S,
+    Eigen::MatrixXcd& U);
 }
 
 #ifndef IGSIM_STATIC_LIBRARY

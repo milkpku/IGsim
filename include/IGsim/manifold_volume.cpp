@@ -28,15 +28,15 @@ IGSIM_INLINE void sim::manifold_volume(
   {
     assert(V.cols() == 3 && "only support 3D vertices");
     Vol = DerivedVol::Zero(F.rows());
-	  for (int i = 0; i < F.rows(); i++)
-	  {
+    for (int i = 0; i < F.rows(); i++)
+    {
       const Eigen::RowVector3d & a = V.row(F(i,0));
       const Eigen::RowVector3d & b = V.row(F(i,1));
       const Eigen::RowVector3d & c = V.row(F(i,2));
       const Eigen::RowVector3d & d = V.row(F(i,3));
-	    Vol(i) = (a-d).dot((b-d).cross(c-d));
-	  }
-	  Vol /= 6.0;
+      Vol(i) = (a-d).dot((b-d).cross(c-d));
+    }
+    Vol /= 6.0;
   }
   else
   {

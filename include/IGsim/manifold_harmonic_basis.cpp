@@ -28,13 +28,13 @@
 
 template <typename DerivedV, typename DerivedF>
 IGSIM_INLINE void sim::manifold_harmonic_basis(
-	const Eigen::PlainObjectBase<DerivedV>& V,
-	const Eigen::PlainObjectBase<DerivedF>& F,
-	const int& k,
-	Eigen::VectorXcd& S,
-	Eigen::MatrixXcd& U)
+  const Eigen::PlainObjectBase<DerivedV>& V,
+  const Eigen::PlainObjectBase<DerivedF>& F,
+  const int& k,
+  Eigen::VectorXcd& S,
+  Eigen::MatrixXcd& U)
 {
-	manifold_harmonic_basis(V, F, k, 0, S, U);
+  manifold_harmonic_basis(V, F, k, 0, S, U);
 }
 
 template <typename DerivedV, typename DerivedF>
