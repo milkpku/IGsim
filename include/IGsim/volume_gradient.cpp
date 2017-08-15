@@ -25,19 +25,21 @@ IGSIM_INLINE void sim::volume_gradient(
   assert(V.cols() == 3 && "should be 3D vertices");
   assert(F.cols() == 3 && "should be triangular mesh");
 
-  G = DerivedG::Zeros(V.cols, 3);
+  G = DerivedG::Zeros(V.rows(), 3);
   for (int i = 0; i < F.rows(); ++i)
   {
     /* compute face area normal */
     const Eigen::RowVector3d& a = V.row(F(i, 0));
     const Eigen::RowVector3d& b = V.row(F(i, 1));
     const Eigen::RowVector3d& c = V.row(F(i, 2));
-    const Eigen::RowVector3d n = (a-c).cross(b-c) / 2.0;
+    // here we record 1/3 of face normal, which can be directly added to 
+    // each vertices normal
+    const Eigen::RowVector3d n = (a-c).cross(b-c) / 6.0;
     
     /* add to corresponding vertex */
-    G.col(F(i,0)) += n;
-    G.col(F(i,1)) += n;
-    G.col(F(i,2)) += n;
+    G.row(F(i,0)) += n;
+    G.row(F(i,1)) += n;
+    G.row(F(i,2)) += n;
   }
 
 }
@@ -76,8 +78,9 @@ IGSIM_INLINE void sim::volume_gradient(
     /* for each vertex of face, calculate its influence on dn */
     for (int j = 0; j < 3; ++j)
     {
-      /* calculate x2 - x1 */
-      const Eigen::RowVector3d l = (V.row(F(i, (j+2)%3)) - V.row(F(i, (j+1)%3))) / 2.;
+      /* calculate (x2 - x1 / 6.0), 2.0 for triangle area and 3.0 for contribution
+       * factor from each triangle to its 3 vertices */
+      const Eigen::RowVector3d l = (V.row(F(i, (j+2)%3)) - V.row(F(i, (j+1)%3))) / 6.;
 
       /* restore influence on kth vertex */
       for (int k = 0; k < 3; ++k)
