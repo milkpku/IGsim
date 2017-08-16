@@ -23,7 +23,7 @@ TEST(average_onto_faces_mat, test) {
   MatrixXi F;
 
   //read obj file
-  igl::readOBJ(SHARED_PATH "/frog.obj", V, F);
+  igl::readOBJ(SHARED_PATH "/3holes.obj", V, F);
   SparseMatrix<double> A;
 
   sim::average_onto_faces_mat(V, F, A);

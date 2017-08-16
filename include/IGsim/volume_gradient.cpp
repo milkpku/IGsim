@@ -25,8 +25,8 @@ IGSIM_INLINE void sim::volume_gradient(
   assert(V.cols() == 3 && "should be 3D vertices");
   assert(F.cols() == 3 && "should be triangular mesh");
 
-  G.setZero();
   G.resize(V.rows(), 3);
+  G.setZero();
   for (int i = 0; i < F.rows(); ++i)
   {
     /* compute face area normal */
