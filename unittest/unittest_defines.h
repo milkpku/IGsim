@@ -13,6 +13,11 @@
 #define IGSIM_UNITTEST_DEFINES_H
 
 #define REPEAT_N 20
+
 #define NUM_EQ(A, B) EXPECT_LT(abs(A-B), 1e-10)
+
+#ifndef SHARED_PATH
+  #define SHARED_PATH "../../shared"
+#endif
 
 #endif //IGSIM_UNITTEST_DEFINES_H

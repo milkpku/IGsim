@@ -18,19 +18,19 @@
 #include "unittest_defines.h"
 
 TEST(average_onto_faces_mat, test) {
-
-  Eigen::MatrixXd V;
-  Eigen::MatrixXi F;
+  using namespace Eigen;
+  MatrixXd V;
+  MatrixXi F;
 
   //read obj file
-  igl::readOBJ("../shared/frog.obj", V, F);
-  Eigen::SparseMatrix<double> A;
+  igl::readOBJ(SHARED_PATH "/frog.obj", V, F);
+  SparseMatrix<double> A;
 
   sim::average_onto_faces_mat(V, F, A);
 
   for (int i = 0; i < REPEAT_N; ++i) {
-    auto V_val = Eigen::VectorXd::Random(V.rows());
-    auto F_avg = A * V_val;
+    VectorXd V_val = VectorXd::Random(V.rows());
+    VectorXd F_avg = A * V_val;
 
     for (int j = 0; j < F.rows(); ++j) {
       auto f = F.row(j);

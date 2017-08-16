@@ -450,8 +450,8 @@ template <
     }
   }
 
-  Kmu.SetFromTriplets(Kmu_coeff.begin(), Kmu_coeff.end());
-  Klam.SetFromTriplets(Klam_coeff.begin(), Klam_coeff.end());
+  Kmu.setFromTriplets(Kmu_coeff.begin(), Kmu_coeff.end());
+  Klam.setFromTriplets(Klam_coeff.begin(), Klam_coeff.end());
 }
 
 template <
