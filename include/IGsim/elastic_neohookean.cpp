@@ -98,8 +98,8 @@ IGSIM_INLINE void sim::elastic_neohookean(
   const Eigen::PlainObjectBase<DerivedT>& T, 
   const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
   const Eigen::PlainObjectBase<DerivedW>& W,
-  const Eigen::PlainObjectBase<DerivedMu>& Mu,
-  const Eigen::PlainObjectBase<DerivedLam>& Lam,
+  const Eigen::PlainObjectBase<DerivedMu>& _Mu,
+  const Eigen::PlainObjectBase<DerivedLam>& _Lam,
   DerivedE&  energy,
   Eigen::PlainObjectBase<DerivedF>& f)
 {
@@ -383,7 +383,7 @@ template <
   Kmu_coeff.clear();
   Kmu_coeff.reserve(12 * T.rows());
 
-  typedef Eigen::Triplet<ScalarMu> Tlam;
+  typedef Eigen::Triplet<ScalarLam> Tlam;
   Klam.setZero();
   Klam.resize(V.size(), Lam.size());
   std::vector<Tlam> Klam_coeff;
@@ -424,7 +424,7 @@ template <
         Kmu_coeff.push_back(Tmu(targ_addr, i, dHmu(j, k)));
       }
     /* compute dH -> df, j = 3 */
-    auto dfmu_3 = dHmu.colwise().sum();
+    auto dfmu_3 = - dHmu.colwise().sum();
     for (int k = 0; k < 3; k++)
     {
       int targ_addr = k * num_V + T(i, 3);
@@ -442,7 +442,7 @@ template <
         Klam_coeff.push_back(Tlam(targ_addr, i, dHlam(j, k)));
       }
     /* compute dH -> df, j = 3 */
-    auto dflam_3 = dHlam.colwise().sum();
+    auto dflam_3 = - dHlam.colwise().sum();
     for (int k = 0; k < 3; k++)
     {
       int targ_addr = k * num_V + T(i, 3);
@@ -500,7 +500,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
 {
   typedef Eigen::Matrix3d Mat3;
   std::vector<Mat3, Eigen::aligned_allocator<Mat3>> Bm;
-  Eigen::MatrixXd W;
+  Eigen::VectorXd W;
 
   /* precomputing Bm and W */
   elastic_neohookean(Vinit, T, Bm, W);
@@ -523,7 +523,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
 {
   typedef Eigen::Matrix3d Mat3;
   std::vector<Mat3, Eigen::aligned_allocator<Mat3>> Bm;
-  Eigen::MatrixXd W;
+  Eigen::VectorXd W;
 
   /* precomputing Bm and W */
   elastic_neohookean(Vinit, T, Bm, W);
@@ -547,7 +547,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
 {
   typedef Eigen::Matrix3d Mat3;
   std::vector<Mat3, Eigen::aligned_allocator<Mat3>> Bm;
-  Eigen::MatrixXd W;
+  Eigen::VectorXd W;
 
   /* precomputing Bm and W */
   elastic_neohookean(Vinit, T, Bm, W);
@@ -573,7 +573,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
 {
   typedef Eigen::Matrix3d Mat3;
   std::vector<Mat3, Eigen::aligned_allocator<Mat3>> Bm;
-  Eigen::MatrixXd W;
+  Eigen::VectorXd W;
 
   /* precomputing Bm and W */
   elastic_neohookean(Vinit, T, Bm, W);

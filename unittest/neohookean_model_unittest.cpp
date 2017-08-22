@@ -47,8 +47,8 @@ TEST(neohookean_model, rigid_rotation)
     NUM_EQ(P.cols(), 3);
 
     sim::neohookean_model(F, mu, lambda, demu, delam, dPmu, dPlam);
-	NUM_EQ(demu, 0.0);
-	NUM_EQ(delam, 0.0);
+    NUM_EQ(demu, 0.0);
+    NUM_EQ(delam, 0.0);
     NUM_EQ(dPmu.sum(), 0.0);
     NUM_EQ(dPmu.rows(), 3);
     NUM_EQ(dPmu.cols(), 3);
@@ -183,4 +183,19 @@ TEST(neohookean_model, increasing_material)
     auto Perr = P - mu * dPmu - lambda * dPlam;
     NUM_EQ( Perr.squaredNorm(), 0);
   }
+}
+
+TEST(neohookean_model, nan_energy)
+{
+  Eigen::Matrix3d F;
+  F << 1, 0, 0,
+       0, 1, 0,
+       0, 0, -1;
+
+  double energy;
+  double mu = 1;
+  double lambda = 1;
+  sim::neohookean_model(F, mu, lambda, energy);
+
+  EXPECT_TRUE(energy != energy);
 }
