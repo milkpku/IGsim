@@ -71,29 +71,38 @@ TEST(neohookean_model, increasing_energy)
   int N = 100;
   double step = 1e-1;
 
-  double energy;
-  sim::neohookean_model(F, mu, lambda, energy);
-
   /* test stretch energy */
   for(int i = 1; i < N; i++)
   {
-    double next_energy;
-    F(0,0) = 1 + i * step;
-    sim::neohookean_model(F, mu, lambda, next_energy);
-    EXPECT_GT(next_energy, energy);
-    energy = next_energy;
+    double energy_test;
+    double k = 1 + i * step;
+    F(0,0) = k;
+    sim::neohookean_model(F, mu, lambda, energy_test);
+
+    // neohookean definition
+    // 0.5 * mu * (I1 - 2 * logJ -3) + 0.5 * lam * logJ * logJ
+    double I1 = 2 + k * k;
+    double logJ = log(k);
+    double energy_std = 0.5 * mu * (I1 - 2 * logJ - 3) + 0.5 * lambda * logJ * logJ;
+
+    NUM_EQ(energy_std, energy_test);
   }
 
-  F(0,0) = 1;
-  sim::neohookean_model(F, mu, lambda, energy);
   /* test press energy */
   for( int i = 2; i < N; i++)
   {
-    double next_energy;
-    F(0,0) = 1.0 / i;
-    sim::neohookean_model(F, mu, lambda, next_energy);
-    EXPECT_GT(next_energy, energy);
-    energy = next_energy;
+    double energy_test;
+    double k = 1.0 / i;
+    F(0,0) = k;
+    sim::neohookean_model(F, mu, lambda, energy_test);
+
+    // neohookean definition
+    // 0.5 * mu * (I1 - 2 * logJ -3) + 0.5 * lam * logJ * logJ
+    double I1 = 2 + k * k;
+    double logJ = log(k);
+    double energy_std = 0.5 * mu * (I1 - 2 * logJ - 3) + 0.5 * lambda * logJ * logJ;
+
+    NUM_EQ(energy_std, energy_test);
   }
 
 }

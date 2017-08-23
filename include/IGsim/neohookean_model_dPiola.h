@@ -23,7 +23,7 @@ namespace sim
    *  deformation gradient dF and parameter Mu, Lam
    *
    *  Neohookean model:
-   *    dP(F, dF) = \mu * dF + [\mu - \lambda * log J] * F^{-T} dF F^{-T}
+   *    dP(F, dF) = \mu * dF + [\mu - \lambda * log J] * F^{-T} dF^T F^{-T}
    *               + \lambda * tr(F^{-1} dF) F^{-T}
    *
    *  Inputs:

@@ -156,7 +156,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
     
     /* accumulate energy */
     energy += W(i) * tmp_e;
-  if (energy != energy) return;
+    if (energy != energy) return;
 
     /* accumulate forces */
     Mat3 _H = - W(i) * P * Bm[i].transpose();
@@ -246,7 +246,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
     
     /* accumulate energy */
     energy += W(i) * tmp_e;
-  if (energy != energy) return;
+    if (energy != energy) return;
 
     /* accumulate forces */
     Mat3 _H = - W(i) * P * Bm[i].transpose();
@@ -477,7 +477,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
     Ds_t << V.row(T(i, 0)), V.row(T(i, 1)), V.row(T(i, 2));
     Ds_t.rowwise() -= V.row(T(i, 3));
 
-    W(i) = Ds_t.determinant();
+    W(i) = Ds_t.determinant() / 6.0;
     DerivedBm_T Bm_tmp = Ds_t.inverse().transpose();
     
     Bm.push_back(Bm_tmp);
