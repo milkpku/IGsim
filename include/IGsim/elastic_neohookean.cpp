@@ -410,8 +410,8 @@ template <
     int num_V = V.rows();
 
     /* fill in fmu and flam */
-    fmu(i) = demu;
-    flam(i) = delam;
+    fmu(i) = W(i) * demu;
+    flam(i) = W(i) * delam;
 
     ////////////////////// fill in Kmu /////////////////////
     Mat3 _dHmu = - W(i) * dPmu * Bm[i].transpose();
