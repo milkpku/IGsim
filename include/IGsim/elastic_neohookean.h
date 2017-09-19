@@ -70,7 +70,7 @@ namespace sim
    *      dx << dx_x, dx_y, dx_z, 
    *      where df_* and dx_* are (#V) vectors of corresponding delta scalar.
    *
-   *      This representation is convenient for ColMajo Eigen Matrix to reshape
+   *      This representation is convenient for ColMajor Eigen Matrix to reshape
    *      from #V by 3 matrix to (3 * #V) vector.
    */
   template <
