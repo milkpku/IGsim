@@ -83,7 +83,7 @@ IGSIM_INLINE void sim::elastic_neohookean(
 
     /* accumulate energy */
     energy += W(i) * tmp_e;
-  if (energy != energy) return;
+    if (energy != energy) return;
   }
  
 }
@@ -108,28 +108,28 @@ IGSIM_INLINE void sim::elastic_neohookean(
   assert(T.cols() == 4 && "Tetra dim must be 4");
   assert(Bm.size() == T.rows() && "Bm size missmatch T rows");
   assert(W.size() == T.rows() && "W size missmatch T rows");
-  assert(Mu.size() == Lam.size() && "Mu size missmatch Lam size");
+  assert(_Mu.size() == _Lam.size() && "Mu size missmatch Lam size");
   
   DerivedMu Mu;
   DerivedLam Lam;
   if (_Mu.size() == V.rows())
   {
     /* average parameter \mu and \lambda from vertices to tetrahedrons */
-  Eigen::SparseMatrix<DerivedE> Proj;
-  sim::average_onto_faces_mat(V, T, Proj);
+    Eigen::SparseMatrix<DerivedE> Proj;
+    sim::average_onto_faces_mat(V, T, Proj);
 
-  Mu = Proj * _Mu;
-  Lam = Proj * _Lam;
+    Mu = Proj * _Mu;
+    Lam = Proj * _Lam;
   }
   else if (_Mu.size() == T.rows())
   {
-  Mu = _Mu;
-  Lam = _Lam;
+    Mu = _Mu;
+    Lam = _Lam;
   }
   else
   {
-  assert(false && "Mu size missmatch V.rows() and T.rows()");
-  return;
+    assert(false && "Mu size missmatch V.rows() and T.rows()");
+    return;
   }
   typedef Eigen::Matrix3d Mat3;
 
@@ -205,13 +205,13 @@ IGSIM_INLINE void sim::elastic_neohookean(
   }
   else if (_Mu.size() == T.rows())
   {
-  Mu = _Mu;
-  Lam = _Lam;
+    Mu = _Mu;
+    Lam = _Lam;
   }
   else
   {
-  assert(false && "Mu size missmatch V.rows() and T.rows()");
-  return;
+    assert(false && "Mu size missmatch V.rows() and T.rows()");
+    return;
   }
   typedef Eigen::Matrix3d Mat3;
 
