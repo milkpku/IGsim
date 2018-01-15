@@ -48,6 +48,24 @@ namespace sim
     const Eigen::PlainObjectBase<DerivedTA>& TA,
     Eigen::PlainObjectBase<DerivedF>& F,
     Eigen::PlainObjectBase<DerivedFA>& FA);
+
+  /*
+  *  Outputs:
+  *    uFA1 #uF by n matrix of information for boundary face/line
+  *    uFA2 #uF by n matrix of information for boundary face/line
+  */
+  template<
+    typename DerivedT, typename DerivedTA,
+    typename DerivedF, typename DerivedFA,
+    typename DeriveduF, typename DeriveduFA1, typename DeriveduFA2>
+  IGSIM_INLINE void manifold_boundary_inner(
+    const Eigen::PlainObjectBase<DerivedT>& T,
+    const Eigen::PlainObjectBase<DerivedTA>& TA,
+    Eigen::PlainObjectBase<DerivedF>& F,
+    Eigen::PlainObjectBase<DerivedFA>& FA,
+    Eigen::PlainObjectBase<DeriveduF>& uF,
+    Eigen::PlainObjectBase<DeriveduFA1>& uFA1,
+    Eigen::PlainObjectBase<DeriveduFA2>& uFA2);
 }
 
 #ifndef IGSTATIC_LIBRARY
