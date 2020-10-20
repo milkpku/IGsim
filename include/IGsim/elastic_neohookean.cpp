@@ -249,75 +249,62 @@ IGSIM_INLINE void sim::elastic_neohookean(
     if (energy != energy) return;
 
     /* accumulate forces */
-    Mat3 _H = - W(i) * P * Bm[i].transpose();
-    Mat3 H = _H.transpose();  /* change to be row wise force */
-    f.row(T(i, 0)) += H.row(0);
-    f.row(T(i, 1)) += H.row(1);
-    f.row(T(i, 2)) += H.row(2);
-    f.row(T(i, 3)) -= H.colwise().sum();
+    Mat3 _H = -W(i) * Bm[i] * P.transpose();  /* change to be row wise force */
+    f.row(T(i, 0)) += _H.row(0);
+    f.row(T(i, 1)) += _H.row(1);
+    f.row(T(i, 2)) += _H.row(2);
+    f.row(T(i, 3)) -= _H.colwise().sum();
 
     /* accumulate stiffness matrix */
-    std::vector<Mat3, Eigen::aligned_allocator<Mat3>> dF, dP;
-    dF.clear();
-    dF.reserve(12);
-    /* Conpute the influence of k th coordinate of j th vertex in tet i on
-     * total forces by pipline dx -> dF -> dP -> dH -> df
-     *  j is the index of vertex in tet, 
-     *  k is the index of coordinate x, y, z 
-     */
-    /* compute dx -> dF, j = 0, 1, 2 */
-    for(int j = 0; j < 3; j++)
-      for(int k = 0; k < 3; k++)
-      {
-        Mat3 dDs = Eigen::Matrix3d::Zero();
-        dDs(k, j) = 1;
+    ScalarK a = -W(i) * Mu(i);
+    ScalarK J = F.determinant();
+    ScalarK b = -W(i) * (Mu(i) - Lam(i) * std::log(J));
+    ScalarK c = -W(i) * Lam(i);
 
-        Mat3 dF_tmp = dDs * Bm[i];
-        dF.push_back(dF_tmp);
-      }
-    /* compute dx -> dF j = 3, namely the last vertex in tet */
-    for(int k = 0; k < 3; k++)
-    { 
-      Mat3 dDs = Eigen::Matrix3d::Zero();
-      dDs.row(k) << -1, -1, -1;
+    Mat3 A = Bm[i] * Bm[i].transpose();
+    Mat3 B = Ds_t.inverse();
+    ScalarK H[12][12];
 
-      Mat3 dF_tmp = dDs * Bm[i];
-      dF.push_back(dF_tmp);
+    /* \par H_kl / \par D_sj = a \delta{s, k} A_jl + b B_kj B_sl + c B_sj B_kl */
+
+    for (int l = 0; l < 3; l++)
+      for (int k = 0; k < 3; k++)
+        for (int j = 0; j < 3; j++)
+          for (int s = 0; s < 3; s++)
+            H[3 * l + k][3 * j + s] = b * B(k, j) * B(s, l) + c * B(s, j) * B(k, l);
+
+    for (int l = 0; l < 3; l++)
+      for (int s = 0; s < 3; s++)
+        for (int j = 0; j < 3; j++)
+          H[3 * l + s][3 * j + s] += a * A(j, l);
+
+    for (int s = 0; s < 9; s++)
+    {
+      H[9][s] = H[s][9] = -(H[s][0] + H[s][3] + H[s][6]);
+      H[10][s] = H[s][10] = -(H[s][1] + H[s][4] + H[s][7]);
+      H[11][s] = H[s][11] = -(H[s][2] + H[s][5] + H[s][8]);
     }
 
-    /* batch compute dF -> dP */
-    sim::neohookean_model_dPiola(F, dF, Mu(i), Lam(i), dP); 
-    
-    /* compute dP -> dH -> df
-     * address of k th coordinate of jth vertex of tet is 
-     * k * V.rows() + T(i, j) according to K's definition 
-     */
-    int count = 0;
+    H[9][9] = -(H[9][0] + H[9][3] + H[9][6]);
+    H[9][10] = H[10][9] = -(H[9][1] + H[9][4] + H[9][7]);
+    H[9][11] = H[11][9] = -(H[9][2] + H[9][5] + H[9][8]);
+    H[10][10] = -(H[10][1] + H[10][4] + H[10][7]);
+    H[10][11] = H[11][10] = -(H[10][2] + H[10][5] + H[10][8]);
+    H[11][11] = -(H[11][2] + H[11][5] + H[11][8]);
+
+    int addr[12];
     int num_V = V.rows();
-    /* compute dP -> dH -> df, j= 0, 1, 2, 3, the index of source vertex 
-     * (j, k) means the k th part of j th vertex of tet T.row(i)*/
-    for(int j = 0; j < 4; j++)
-      for(int k = 0; k < 3; k++)
-      {
-        Mat3 _dH = - W(i) * dP[count++] * Bm[i].transpose();
-        Mat3 dH = _dH.transpose(); /* change to be row wise force */
-        int src_addr = k * num_V + T(i, j);
-        
-        /* compute dH -> df, l = 0, 1, 2, the index of target vertex */
-        for(int l = 0; l < 3; l++)
-          for(int m = 0; m < 3; m++)
-          {
-            int targ_addr = m * num_V + T(i, l);
-            K_coeff.push_back(Tk(targ_addr, src_addr, dH(l, m)));
-          }
-        /* compute dH -> df, l = 3 */
-        auto df_3 = - dH.colwise().sum();
-        for(int m = 0; m < 3; m++)
-        {
-          int targ_addr = m * num_V + T(i, 3);
-          K_coeff.push_back(Tk(targ_addr, src_addr, df_3(m)));
-        }
-      }
+    for (int s = 0; s < 4; s++)
+    {
+      int ind = T(i, s);
+      addr[3 * s] = ind;
+      addr[3 * s + 1] = ind + num_V;
+      addr[3 * s + 2] = ind + 2 * num_V;
+    }
+
+    for (int k = 0; k < 12; k++)
+      for (int l = 0; l < 12; l++)
+        K_coeff.push_back(Tk(addr[k], addr[l], H[k][l]));
   }
   K.setFromTriplets(K_coeff.begin(), K_coeff.end());
   K.makeCompressed();

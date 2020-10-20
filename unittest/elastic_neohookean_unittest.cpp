@@ -17,68 +17,165 @@
 
 #include "unittest_defines.h"
 
-// Since elastic_neohookean E, force and K are tested by other means
-// only test parameter here
+using namespace Eigen;
+typedef Eigen::MatrixXd dMat;
+typedef Eigen::VectorXd dVec;
+typedef Eigen::MatrixXi iMat;
+typedef Eigen::SparseMatrix<double> SpMat;
 
-TEST(elastic_neohookean, dparam)
+void init_tetmesh(dMat& V, iMat& T)
 {
-  using namespace Eigen;
-  MatrixXd V;
-  MatrixXi T;
-  
   // unit cube at origin
   V.resize(8, 3);
   T.resize(6, 4);
   V << 0, 0, 0,
-       1, 0, 0,
-       1, 1, 0,
-       0, 1, 0,
-       0, 0, 1,
-       1, 0, 1,
-       1, 1, 1,
-       0, 1, 1;
+    1, 0, 0,
+    1, 1, 0,
+    0, 1, 0,
+    0, 0, 1,
+    1, 0, 1,
+    1, 1, 1,
+    0, 1, 1;
   T << 1, 2, 5, 0,
-       2, 6, 5, 0,
-       5, 6, 4, 0,
-       6, 7, 4, 0,
-       6, 2, 7, 0,
-       2, 3, 7, 0;
+    2, 6, 5, 0,
+    5, 6, 4, 0,
+    6, 7, 4, 0,
+    6, 2, 7, 0,
+    2, 3, 7, 0;
+}
+
+TEST(elastic_neohookean, energy)
+{
+  dMat V;
+  iMat T;
+  init_tetmesh(V, T);
 
   for (int i = 0; i < REPEAT_N; i++)
   {
-    MatrixXd dV = 0.1 * MatrixXd::Random(V.rows(), V.cols());
-    MatrixXd V_curr = V + dV;
+    dMat dV = 0.1 * dMat::Random(V.rows(), V.cols());
+    dMat V_curr = V + dV;
 
-    VectorXd mu = VectorXd::Random(T.rows());
-    VectorXd lam = VectorXd::Random(T.rows());
+    dVec mu = dVec::Random(T.rows());
+    dVec lam = dVec::Random(T.rows());
 
-    VectorXd dmu = VectorXd::Random(T.rows());
-    VectorXd dlam = VectorXd::Random(T.rows());
+    double e_curr;
 
-    VectorXd mu_targ = mu + dmu;
-    VectorXd lam_targ = lam + dlam;
+    sim::elastic_neohookean(V_curr, V, T, mu, lam, e_curr);
+
+    EXPECT_TRUE(std::isfinite(e_curr));
+  }
+}
+
+TEST(elastic_neohookean, force)
+{
+  dMat V;
+  iMat T;
+  init_tetmesh(V, T);
+
+  for (int i = 0; i < REPEAT_N; i++)
+  {
+    dMat dV = 0.3 * dMat::Random(V.rows(), V.cols());
+    dMat V_curr = V + dV;
+
+    dMat dV2 = dMat::Random(V.rows(), V.cols());
+    dV2 *= 1e-5 / dV2.norm();
+    dMat V_targ = V_curr + dV2;
+
+    dVec mu = dVec::Random(T.rows());
+    dVec lam = dVec::Random(T.rows());
 
     double e_curr, e_targ;
-    MatrixXd F_curr, F_targ;
+    dMat f_curr;
+    sim::elastic_neohookean(V_curr, V, T, mu, lam, e_curr, f_curr);
+    sim::elastic_neohookean(V_targ, V, T, mu, lam, e_targ);
+
+    double de = e_targ - e_curr;
+
+    double de_exp = -(f_curr.cwiseProduct(dV2)).sum();
+
+    double de_err = de - de_exp;
+
+    EXPECT_LT(abs(de_err / de), 3e-4);
+  }
+}
+
+TEST(elastic_neohookean, stiffness)
+{
+  dMat V;
+  iMat T;
+  init_tetmesh(V, T);
+
+  for (int i = 0; i < REPEAT_N; i++)
+  {
+    dMat dV = 0.1 * dMat::Random(V.rows(), V.cols());
+    dMat V_curr = V + dV;
+
+    dMat dV2 = dMat::Random(V.rows(), V.cols());
+    dV2 *= 1e-5 / dV2.norm();
+    dMat V_targ = V_curr + dV2;
+
+    dVec mu = dVec::Random(T.rows());
+    dVec lam = dVec::Random(T.rows());
+
+    double e_curr, e_targ;
+    dMat f_curr, f_targ;
+    SpMat K_curr;
+    sim::elastic_neohookean(V_curr, V, T, mu, lam, e_curr, f_curr, K_curr);
+    sim::elastic_neohookean(V_targ, V, T, mu, lam, e_targ, f_targ);
+
+    dMat df = f_targ - f_curr;
+    df.resize(df.size(), 1);
+
+    dV2.resize(dV2.size(), 1);
+    dMat df_exp = K_curr * dV2;
+
+    dVec df_err = df - df_exp;
+
+    EXPECT_LT(df_err.norm() / df.norm(), 1e-5);
+  }
+}
+
+TEST(elastic_neohookean, dparam)
+{
+  dMat V;
+  iMat T;
+  init_tetmesh(V, T);
+ 
+  for (int i = 0; i < REPEAT_N; i++)
+  {
+    dMat dV = 0.1 * dMat::Random(V.rows(), V.cols());
+    dMat V_curr = V + dV;
+
+    dVec mu = dVec::Random(T.rows());
+    dVec lam = dVec::Random(T.rows());
+
+    dVec dmu = dVec::Random(T.rows());
+    dVec dlam = dVec::Random(T.rows());
+
+    dVec mu_targ = mu + dmu;
+    dVec lam_targ = lam + dlam;
+
+    double e_curr, e_targ;
+    dMat F_curr, F_targ;
 
     sim::elastic_neohookean(V_curr, V, T, mu, lam, e_curr, F_curr);
 
     sim::elastic_neohookean(V_curr, V, T, mu_targ, lam_targ, e_targ, F_targ);
 
     double de = e_targ - e_curr;
-    MatrixXd dF = F_targ - F_curr;
+    dMat dF = F_targ - F_curr;
     dF.resize(dF.size(), 1);
-    VectorXd dF_vec = dF.col(0);
+    dVec dF_vec = dF.col(0);
 
-    VectorXd fmu, flam;
-    SparseMatrix<double> Kmu, Klam;
+    dVec fmu, flam;
+    SpMat Kmu, Klam;
     sim::elastic_neohookean(V_curr, V, T, mu, lam, fmu, flam, Kmu, Klam);
 
     double de_est = fmu.dot(dmu) + flam.dot(dlam);
-    VectorXd dF_est = Kmu * dmu + Klam * dlam;
+    dVec dF_est = Kmu * dmu + Klam * dlam;
 
     NUM_EQ(de_est, de);
-    VectorXd dF_err = dF_vec - dF_est;
+    dVec dF_err = dF_vec - dF_est;
     NUM_EQ(dF_err.norm(), 0);
   }
 
