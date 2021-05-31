@@ -1,4 +1,4 @@
-# IGsim - A tiny C++ FEM simulation library
+# IGsim - A tiny C++ library for FEM based deformable object simulation
 
 IGsim is a tiny C++ FEM simulation library. It has implemented functions which calculate deformation energy, force and sitffness matrix of neo-hookean material and some other tools which are handy for 3D FEM based simulation.
 
