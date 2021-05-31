@@ -21,6 +21,7 @@ using namespace Eigen;
 typedef Eigen::MatrixXd dMat;
 typedef Eigen::VectorXd dVec;
 typedef Eigen::MatrixXi iMat;
+typedef Eigen::Matrix3d dMat3;
 typedef Eigen::SparseMatrix<double> SpMat;
 
 void init_tetmesh(dMat& V, iMat& T)
@@ -49,6 +50,9 @@ TEST(elastic_neohookean, energy)
   dMat V;
   iMat T;
   init_tetmesh(V, T);
+  std::vector<dMat3> Bm;
+  dVec W;
+  sim::elastic_neohookean(V, T, Bm, W);
 
   for (int i = 0; i < REPEAT_N; i++)
   {
@@ -60,7 +64,8 @@ TEST(elastic_neohookean, energy)
 
     double e_curr;
 
-    sim::elastic_neohookean(V_curr, V, T, mu, lam, e_curr);
+
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, e_curr);
 
     EXPECT_TRUE(std::isfinite(e_curr));
   }
@@ -71,6 +76,9 @@ TEST(elastic_neohookean, force)
   dMat V;
   iMat T;
   init_tetmesh(V, T);
+  std::vector<dMat3> Bm;
+  dVec W;
+  sim::elastic_neohookean(V, T, Bm, W);
 
   for (int i = 0; i < REPEAT_N; i++)
   {
@@ -86,8 +94,9 @@ TEST(elastic_neohookean, force)
 
     double e_curr, e_targ;
     dMat f_curr;
-    sim::elastic_neohookean(V_curr, V, T, mu, lam, e_curr, f_curr);
-    sim::elastic_neohookean(V_targ, V, T, mu, lam, e_targ);
+
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, e_curr, f_curr);
+    sim::elastic_neohookean(V_targ, T, Bm, W, mu, lam, e_targ);
 
     double de = e_targ - e_curr;
 
@@ -104,6 +113,9 @@ TEST(elastic_neohookean, stiffness)
   dMat V;
   iMat T;
   init_tetmesh(V, T);
+  std::vector<dMat3> Bm;
+  dVec W;
+  sim::elastic_neohookean(V, T, Bm, W);
 
   for (int i = 0; i < REPEAT_N; i++)
   {
@@ -120,8 +132,8 @@ TEST(elastic_neohookean, stiffness)
     double e_curr, e_targ;
     dMat f_curr, f_targ;
     SpMat K_curr;
-    sim::elastic_neohookean(V_curr, V, T, mu, lam, e_curr, f_curr, K_curr);
-    sim::elastic_neohookean(V_targ, V, T, mu, lam, e_targ, f_targ);
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, e_curr, f_curr, K_curr);
+    sim::elastic_neohookean(V_targ, T, Bm, W, mu, lam, e_targ, f_targ);
 
     dMat df = f_targ - f_curr;
     df.resize(df.size(), 1);
@@ -140,7 +152,10 @@ TEST(elastic_neohookean, dparam)
   dMat V;
   iMat T;
   init_tetmesh(V, T);
- 
+  std::vector<dMat3> Bm;
+  dVec W;
+  sim::elastic_neohookean(V, T, Bm, W);
+
   for (int i = 0; i < REPEAT_N; i++)
   {
     dMat dV = 0.1 * dMat::Random(V.rows(), V.cols());
@@ -158,9 +173,9 @@ TEST(elastic_neohookean, dparam)
     double e_curr, e_targ;
     dMat F_curr, F_targ;
 
-    sim::elastic_neohookean(V_curr, V, T, mu, lam, e_curr, F_curr);
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, e_curr, F_curr);
 
-    sim::elastic_neohookean(V_curr, V, T, mu_targ, lam_targ, e_targ, F_targ);
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu_targ, lam_targ, e_targ, F_targ);
 
     double de = e_targ - e_curr;
     dMat dF = F_targ - F_curr;
@@ -169,7 +184,7 @@ TEST(elastic_neohookean, dparam)
 
     dVec fmu, flam;
     SpMat Kmu, Klam;
-    sim::elastic_neohookean(V_curr, V, T, mu, lam, fmu, flam, Kmu, Klam);
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, fmu, flam, Kmu, Klam);
 
     double de_est = fmu.dot(dmu) + flam.dot(dlam);
     dVec dF_est = Kmu * dmu + Klam * dlam;

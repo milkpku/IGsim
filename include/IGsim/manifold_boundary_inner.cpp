@@ -22,6 +22,7 @@ IGSIM_INLINE void sim::manifold_boundary_inner(
   Eigen::PlainObjectBase<DerivedF>& F,
   Eigen::PlainObjectBase<DeriveduF>& uF)
 {
+  typedef Eigen::VectorXi iVec;
   iVec TA, FA, uFA1, uFA2;
   TA = iVec::Zero(T.rows());
   manifold_boundary_inner(T, TA, F, FA, uF, uFA1, uFA2);
@@ -36,7 +37,7 @@ IGSIM_INLINE void sim::manifold_boundary_inner(
   Eigen::PlainObjectBase<DerivedF>& F,
   Eigen::PlainObjectBase<DerivedFA>& FA)
 {
-  iMat uF;
+  Eigen::MatrixXi uF;
   DerivedTA uFA1, uFA2;
   manifold_boundary_inner(T, TA, F, FA, uF, uFA1, uFA2);
 }

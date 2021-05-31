@@ -12,13 +12,48 @@
 #include "elastic_neohookean.h"
 #include "neohookean_model.h"
 #include "neohookean_model_dPiola.h"
-
 #include "average_onto_faces_mat.h"
+
+#include <igl/parallel_for.h>
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <Eigen/StdVector>
 
+/* initialization of Bm and W */
+template <
+  typename DerivedV, typename DerivedT, 
+  typename DerivedBm_T, typename DerivedBm_A, typename DerivedW>
+IGSIM_INLINE void sim::elastic_neohookean(
+  const Eigen::PlainObjectBase<DerivedV>& V,
+  const Eigen::PlainObjectBase<DerivedT>& T,
+  std::vector<DerivedBm_T, DerivedBm_A>& Bm,
+  Eigen::PlainObjectBase<DerivedW>& W)
+{
+  assert(V.cols() == 3 && "Vertices dim must be 3");
+  assert(T.cols() == 4 && "Tetra dim must be 4");
+  typedef Eigen::Matrix3d Mat3;
+  
+  Bm.clear();
+  Bm.reserve(T.rows());
+  W = DerivedW::Zero(T.rows());
+
+  for(int i = 0; i < T.rows(); i++)
+  {
+    Mat3 Ds_t;
+    Ds_t << V.row(T(i, 0)), V.row(T(i, 1)), V.row(T(i, 2));
+    Ds_t.rowwise() -= V.row(T(i, 3));
+
+    W(i) = Ds_t.determinant() / 6.0;
+    DerivedBm_T Bm_tmp = Ds_t.inverse().transpose();
+    
+    Bm.push_back(Bm_tmp);
+  }
+
+  assert( W.minCoeff() > 0 && "negtive volume in W");
+}
+
+/* convenient API for energy without start & num */
 template <
   typename DerivedV, typename DerivedT,
   typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
@@ -31,6 +66,76 @@ IGSIM_INLINE void sim::elastic_neohookean(
   const Eigen::PlainObjectBase<DerivedW>& W,
   const Eigen::PlainObjectBase<DerivedMu>& _Mu,
   const Eigen::PlainObjectBase<DerivedLam>& _Lam,
+  DerivedE&  energy)
+{
+  int start = 0;
+  int num = T.rows();
+  elastic_neohookean(V, T, Bm, W, _Mu, _Lam, start, num, energy);
+}
+
+/* convenient API for energy, grad without start & num */
+template <
+  typename DerivedV, typename DerivedT, 
+  typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
+  typename DerivedMu, typename DerivedLam,
+  typename DerivedE, typename DerivedG>
+IGSIM_INLINE void sim::elastic_neohookean(
+  const Eigen::PlainObjectBase<DerivedV>& V,
+  const Eigen::PlainObjectBase<DerivedT>& T, 
+  const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
+  const Eigen::PlainObjectBase<DerivedW>& W,
+  const Eigen::PlainObjectBase<DerivedMu>& _Mu,
+  const Eigen::PlainObjectBase<DerivedLam>& _Lam,
+  DerivedE&  energy,
+  Eigen::PlainObjectBase<DerivedG>& grad)
+{
+  int start = 0;
+  int num = T.rows();
+  elastic_neohookean(V, T, Bm, W, _Mu, _Lam, start, num, energy, grad);
+}
+
+/* convenient API for energy, grad and hess without start & num */
+template <
+  typename DerivedV, typename DerivedT, 
+  typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
+  typename DerivedMu, typename DerivedLam,
+  typename DerivedE, typename DerivedG, typename ScalarH>
+IGSIM_INLINE void sim::elastic_neohookean(
+  const Eigen::PlainObjectBase<DerivedV>& V,
+  const Eigen::PlainObjectBase<DerivedT>& T, 
+  const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
+  const Eigen::PlainObjectBase<DerivedW>& W,
+  const Eigen::PlainObjectBase<DerivedMu>& _Mu,
+  const Eigen::PlainObjectBase<DerivedLam>& _Lam,
+  DerivedE&  energy,
+  Eigen::PlainObjectBase<DerivedG>& grad,
+  Eigen::SparseMatrix<ScalarH>& H)
+{
+  int start = 0;
+  int num = T.rows();
+  std::vector<Eigen::Triplet<ScalarH>> hess_vec;
+  hess_vec.reserve(144*num);
+  elastic_neohookean(V, T, Bm, W, _Mu, _Lam, start, num, energy, grad, hess_vec);
+  H.setZero();
+  H.setFromTriplets(hess_vec.begin(), hess_vec.end());
+  H.makeCompressed();
+}
+
+/* main body to compute energy */
+template <
+  typename DerivedV, typename DerivedT,
+  typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
+  typename DerivedMu, typename DerivedLam,
+  typename DerivedE>
+IGSIM_INLINE void sim::elastic_neohookean(
+  const Eigen::PlainObjectBase<DerivedV>& V,
+  const Eigen::PlainObjectBase<DerivedT>& T, 
+  const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
+  const Eigen::PlainObjectBase<DerivedW>& W,
+  const Eigen::PlainObjectBase<DerivedMu>& _Mu,
+  const Eigen::PlainObjectBase<DerivedLam>& _Lam,
+  const int start,
+  const int num,
   DerivedE&  energy)
 {
   using namespace std;
@@ -61,12 +166,17 @@ IGSIM_INLINE void sim::elastic_neohookean(
     assert(false && "Mu size missmatch V.rows() and T.rows()");
     return;
   }
+
   typedef Eigen::Matrix3d Mat3;
+
+  /* loop for of each tet */
+  int end = start + num;
+  assert(end <= T.rows() && "start + num excceeds max T rows");
 
   energy = 0;
 
   /* loop for each tet */
-  for (int i = 0; i < T.rows(); i++)
+  for (int i = 0; i < end; i++)
   {
     /* compute deformation pos Ds = [v0-v3, v1-v3, v2-v3] */
     Mat3 Ds_t;
@@ -85,23 +195,25 @@ IGSIM_INLINE void sim::elastic_neohookean(
     energy += W(i) * tmp_e;
     if (energy != energy) return;
   }
- 
 }
 
+/* main body to compute energy, grad */
 template <
   typename DerivedV, typename DerivedT, 
   typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
   typename DerivedMu, typename DerivedLam,
-  typename DerivedE, typename DerivedF>
+  typename DerivedE, typename DerivedG>
 IGSIM_INLINE void sim::elastic_neohookean(
   const Eigen::PlainObjectBase<DerivedV>& V,
-  const Eigen::PlainObjectBase<DerivedT>& T, 
+  const Eigen::PlainObjectBase<DerivedT>& T,
   const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
   const Eigen::PlainObjectBase<DerivedW>& W,
   const Eigen::PlainObjectBase<DerivedMu>& _Mu,
   const Eigen::PlainObjectBase<DerivedLam>& _Lam,
-  DerivedE&  energy,
-  Eigen::PlainObjectBase<DerivedF>& f)
+  const int start,
+  const int num,
+  DerivedE& energy,
+  Eigen::PlainObjectBase<DerivedG>& grad)
 {
   using namespace std;
   assert(V.cols() == 3 && "Vertices dim must be 3");
@@ -131,14 +243,14 @@ IGSIM_INLINE void sim::elastic_neohookean(
     assert(false && "Mu size missmatch V.rows() and T.rows()");
     return;
   }
+
   typedef Eigen::Matrix3d Mat3;
 
-  energy = 0;
-
-  f = DerivedF::Zero(V.rows(), V.cols());
-
   /* loop for of each tet */
-  for (int i = 0; i < T.rows(); i++)
+  int end = start + num;
+  assert(end <= T.rows() && "start + num excceeds max T rows");
+
+  for (int i = start; i < end; i++)
   {
     /* compute deformation pos Ds = [v0-v3, v1-v3, v2-v3] */
     Mat3 Ds_t;
@@ -150,40 +262,41 @@ IGSIM_INLINE void sim::elastic_neohookean(
     F = Ds_t.transpose() * Bm[i];
 
     /* call neohookean model to get energy */
-    DerivedE tmp_e;
+    double tmp_e;
     Mat3 P;
     sim::neohookean_model(F, Mu(i), Lam(i), tmp_e, P);
-    
+
     /* accumulate energy */
     energy += W(i) * tmp_e;
     if (energy != energy) return;
 
     /* accumulate forces */
-    Mat3 _H = - W(i) * P * Bm[i].transpose();
-    Mat3 H = _H.transpose();  /* change to be row wise force */
-    f.row(T(i, 0)) += H.row(0);
-    f.row(T(i, 1)) += H.row(1);
-    f.row(T(i, 2)) += H.row(2);
-    f.row(T(i, 3)) -= H.colwise().sum();
+    Mat3 _H = W(i) * Bm[i] * P.transpose();  /* change to be row wise force */
+    grad.row(T(i, 0)) += _H.row(0);
+    grad.row(T(i, 1)) += _H.row(1);
+    grad.row(T(i, 2)) += _H.row(2);
+    grad.row(T(i, 3)) -= _H.colwise().sum();
   }
-
 }
 
+/* main body to compute energy, grad and hess_vec */
 template <
   typename DerivedV, typename DerivedT, 
   typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
   typename DerivedMu, typename DerivedLam,
-  typename DerivedE, typename DerivedF, typename ScalarK>
+  typename DerivedE, typename DerivedG, typename ScalarH>
 IGSIM_INLINE void sim::elastic_neohookean(
   const Eigen::PlainObjectBase<DerivedV>& V,
-  const Eigen::PlainObjectBase<DerivedT>& T, 
+  const Eigen::PlainObjectBase<DerivedT>& T,
   const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
   const Eigen::PlainObjectBase<DerivedW>& W,
   const Eigen::PlainObjectBase<DerivedMu>& _Mu,
   const Eigen::PlainObjectBase<DerivedLam>& _Lam,
-  DerivedE&  energy,
-  Eigen::PlainObjectBase<DerivedF>& f,
-  Eigen::SparseMatrix<ScalarK>& K)
+  const int start,
+  const int num,
+  DerivedE& energy,
+  Eigen::PlainObjectBase<DerivedG>& grad,
+  std::vector<Eigen::Triplet<ScalarH>>& hess_vec)
 {
   using namespace std;
   assert(V.cols() == 3 && "Vertices dim must be 3");
@@ -213,22 +326,14 @@ IGSIM_INLINE void sim::elastic_neohookean(
     assert(false && "Mu size missmatch V.rows() and T.rows()");
     return;
   }
+
   typedef Eigen::Matrix3d Mat3;
 
-  energy = 0;
-
-  f = DerivedF::Zero(V.rows(), V.cols());
-
-  K.setZero();
-  K.resize(V.size(), V.size());
-  typedef Eigen::Triplet<ScalarK> Tk;
-  std::vector<Tk> K_coeff;
-  K_coeff.clear();
-  /* 12 parameters of a tet influence each other */
-  K_coeff.reserve(144 * T.rows());
-
   /* loop for of each tet */
-  for (int i = 0; i < T.rows(); i++)
+  int end = start + num;
+  assert(end <= T.rows() && "start + num excceeds max T rows");
+
+  for (int i = start; i < end; i++)
   {
     /* compute deformation pos Ds = [v0-v3, v1-v3, v2-v3] */
     Mat3 Ds_t;
@@ -240,30 +345,30 @@ IGSIM_INLINE void sim::elastic_neohookean(
     F = Ds_t.transpose() * Bm[i];
 
     /* call neohookean model to get energy */
-    DerivedE tmp_e;
+    double tmp_e;
     Mat3 P;
     sim::neohookean_model(F, Mu(i), Lam(i), tmp_e, P);
-    
+
     /* accumulate energy */
     energy += W(i) * tmp_e;
     if (energy != energy) return;
 
     /* accumulate forces */
-    Mat3 _H = -W(i) * Bm[i] * P.transpose();  /* change to be row wise force */
-    f.row(T(i, 0)) += _H.row(0);
-    f.row(T(i, 1)) += _H.row(1);
-    f.row(T(i, 2)) += _H.row(2);
-    f.row(T(i, 3)) -= _H.colwise().sum();
+    Mat3 _H = W(i) * Bm[i] * P.transpose();  /* change to be row wise force */
+    grad.row(T(i, 0)) += _H.row(0);
+    grad.row(T(i, 1)) += _H.row(1);
+    grad.row(T(i, 2)) += _H.row(2);
+    grad.row(T(i, 3)) -= _H.colwise().sum();
 
     /* accumulate stiffness matrix */
-    ScalarK a = -W(i) * Mu(i);
-    ScalarK J = F.determinant();
-    ScalarK b = -W(i) * (Mu(i) - Lam(i) * std::log(J));
-    ScalarK c = -W(i) * Lam(i);
+    double a = W(i) * Mu(i);
+    double J = F.determinant();
+    double b = W(i) * (Mu(i) - Lam(i) * std::log(J));
+    double c = W(i) * Lam(i);
 
     Mat3 A = Bm[i] * Bm[i].transpose();
     Mat3 B = Ds_t.inverse();
-    ScalarK H[12][12];
+    double H[12][12];
 
     /* \par H_kl / \par D_sj = a \delta{s, k} A_jl + b B_kj B_sl + c B_sj B_kl */
 
@@ -293,40 +398,229 @@ IGSIM_INLINE void sim::elastic_neohookean(
     H[11][11] = -(H[11][2] + H[11][5] + H[11][8]);
 
     int addr[12];
-    int num_V = V.rows();
-    for (int s = 0; s < 4; s++)
+
+    if (DerivedV::Options == Eigen::ColMajor)
     {
-      int ind = T(i, s);
-      addr[3 * s] = ind;
-      addr[3 * s + 1] = ind + num_V;
-      addr[3 * s + 2] = ind + 2 * num_V;
+      /* use col-major matrix */
+      int num_V = V.rows();
+      for (int s = 0; s < 4; s++)
+      {
+        int ind = T(i, s);
+        addr[3 * s] = ind;
+        addr[3 * s + 1] = ind + num_V;
+        addr[3 * s + 2] = ind + 2 * num_V;
+      }
+    }
+    else
+    {
+      /* use row-major matrix */
+      for (int s = 0; s < 4; s++)
+      {
+        int ind = T(i, s);
+        ind *= 3;
+        addr[3 * s] = ind;
+        addr[3 * s + 1] = ind + 1;
+        addr[3 * s + 2] = ind + 2;
+      }
     }
 
     for (int k = 0; k < 12; k++)
       for (int l = 0; l < 12; l++)
-        K_coeff.push_back(Tk(addr[k], addr[l], H[k][l]));
+        hess_vec.emplace_back(addr[k], addr[l], H[k][l]);
   }
-  K.setFromTriplets(K_coeff.begin(), K_coeff.end());
-  K.makeCompressed();
 }
 
+/* main body to compute energy, grad and hess on basis */
+template<
+  typename DerivedV, typename DerivedT, 
+  typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
+  typename DerivedMu, typename DerivedLam, typename DerivedB,
+  typename DerivedE, typename DerivedG, typename DerivedH>
+IGSIM_INLINE void elastic_neohookean(
+  const Eigen::PlainObjectBase<DerivedV>& V,
+  const Eigen::PlainObjectBase<DerivedT>& T,
+  const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
+  const Eigen::PlainObjectBase<DerivedW>& W,
+  const Eigen::PlainObjectBase<DerivedMu>& _Mu,
+  const Eigen::PlainObjectBase<DerivedLam>& _Lam,
+  const Eigen::PlainObjectBase<DerivedB>& basis,
+  const int start,
+  const int num,
+  DerivedE& energy,
+  Eigen::PlainObjectBase<DerivedG>& grad,
+  Eigen::PlainObjectBase<DerivedH>& hess)
+{
+  using namespace std;
+  assert(V.cols() == 3 && "Vertices dim must be 3");
+  assert(T.cols() == 4 && "Tetra dim must be 4");
+  assert(Bm.size() == T.rows() && "Bm size missmatch T rows");
+  assert(W.size() == T.rows() && "W size missmatch T rows");
+  assert(_Mu.size() == _Lam.size() && "Mu size missmatch Lam size");
+  assert(T.middleRows(start, num).maxCoeff() * 3 < basis.rows() && "index out of basis range");
+
+  DerivedMu Mu;
+  DerivedLam Lam;
+  if (_Mu.size() == V.rows())
+  {
+    /* average parameter \mu and \lambda from vertices to tetrahedrons */
+    Eigen::SparseMatrix<DerivedE> Proj;
+    sim::average_onto_faces_mat(V, T, Proj);
+
+    Mu = Proj * _Mu;
+    Lam = Proj * _Lam;
+  }
+  else if (_Mu.size() == T.rows())
+  {
+    Mu = _Mu;
+    Lam = _Lam;
+  }
+  else
+  {
+    assert(false && "Mu size missmatch V.rows() and T.rows()");
+    return;
+  }
+  typedef Eigen::Matrix3d Mat3;
+
+  /* loop for of each tet */
+  int end = start + num;
+  assert(end <= T.rows() && "start + num excceeds max T rows");
+
+  elastic_neohookean(V, T, Bm, W, Mu, Lam, start, num, energy, grad);
+
+  int num_core = 8;
+  int block = num / num_core;
+  std::vector<DerivedH> hess_tmp;
+  hess_tmp.clear();
+  for (int i = 0; i < num_core; i++)
+  {
+    hess_tmp.push_back(DerivedH::Zero(basis.cols(), basis.cols()));
+  }
+
+  igl::parallel_for(num_core, [&V, &T, &Bm, &W, &Mu, &Lam, &basis, &start, &hess, &end, &block, &hess_tmp](const int idx)
+    {
+      int block_start = start + idx * block;
+      int block_end = min(start + idx * block + block, end);
+      for (int i = block_start; i < block_end; i++)
+      {
+        /* compute deformation pos Ds = [v0-v3, v1-v3, v2-v3] */
+        Mat3 Ds_t;
+        Ds_t << V.row(T(i, 0)), V.row(T(i, 1)), V.row(T(i, 2));
+        Ds_t.rowwise() -= V.row(T(i, 3));
+
+        /* compute deformation gradient F */
+        Mat3 F;
+        F = Ds_t.transpose() * Bm[i];
+
+        /* call neohookean model to get energy */
+        double tmp_e;
+        Mat3 P;
+        sim::neohookean_model(F, Mu(i), Lam(i), tmp_e, P);
+
+        /* accumulate stiffness matrix */
+        double a = W(i) * Mu(i);
+        double J = F.determinant();
+        double b = W(i) * (Mu(i) - Lam(i) * std::log(J));
+        double c = W(i) * Lam(i);
+
+        Mat3 A = Bm[i] * Bm[i].transpose();
+        Mat3 B = Ds_t.inverse();
+
+        double H[12][12];
+
+        /* \par H_kl / \par D_sj = a \delta{s, k} A_jl + b B_kj B_sl + c B_sj B_kl */
+
+        for (int l = 0; l < 3; l++)
+          for (int k = 0; k < 3; k++)
+            for (int j = 0; j < 3; j++)
+              for (int s = 0; s < 3; s++)
+                H[3 * l + k][3 * j + s] = b * B(k, j) * B(s, l) + c * B(s, j) * B(k, l);
+
+        for (int l = 0; l < 3; l++)
+          for (int s = 0; s < 3; s++)
+            for (int j = 0; j < 3; j++)
+              H[3 * l + s][3 * j + s] += a * A(j, l);
+
+        for (int s = 0; s < 9; s++)
+        {
+          H[9][s] = H[s][9] = -(H[s][0] + H[s][3] + H[s][6]);
+          H[10][s] = H[s][10] = -(H[s][1] + H[s][4] + H[s][7]);
+          H[11][s] = H[s][11] = -(H[s][2] + H[s][5] + H[s][8]);
+        }
+
+        H[9][9] = -(H[9][0] + H[9][3] + H[9][6]);
+        H[9][10] = H[10][9] = -(H[9][1] + H[9][4] + H[9][7]);
+        H[9][11] = H[11][9] = -(H[9][2] + H[9][5] + H[9][8]);
+        H[10][10] = -(H[10][1] + H[10][4] + H[10][7]);
+        H[10][11] = H[11][10] = -(H[10][2] + H[10][5] + H[10][8]);
+        H[11][11] = -(H[11][2] + H[11][5] + H[11][8]);
+
+        int addr[12];
+
+        if (DerivedV::Options == Eigen::ColMajor)
+        {
+          /* use col-major matrix */
+          int num_V = V.rows();
+          for (int s = 0; s < 4; s++)
+          {
+            int ind = T(i, s);
+            addr[3 * s] = ind;
+            addr[3 * s + 1] = ind + num_V;
+            addr[3 * s + 2] = ind + 2 * num_V;
+          }
+        }
+        else
+        {
+          /* use row-major matrix */
+          for (int s = 0; s < 4; s++)
+          {
+            int ind = T(i, s);
+            ind *= 3;
+            addr[3 * s] = ind;
+            addr[3 * s + 1] = ind + 1;
+            addr[3 * s + 2] = ind + 2;
+          }
+        }
+
+        DerivedH Hmat(12, 12);
+        for (int j = 0; j < 12; j++)
+          for (int k = 0; k < 12; k++)
+            Hmat(j, k) = H[j][k];
+
+        DerivedB sub_base(12, basis.cols());
+        for (int k = 0; k < 12; k++)
+          sub_base.row(k) = basis.row(addr[k]);
+
+        DerivedH hess_sub = sub_base.transpose() * Hmat * sub_base;
+
+        /* accumulate energy */
+        hess_tmp[idx] += hess_sub;
+      }
+    }, num_core);
+
+  for (int i = 0; i < num_core; i++)
+  {
+    hess += hess_tmp[i];
+  }
+}
+
+/* main body to compute mu\lam gradient */
 template <
   typename DerivedV, typename DerivedT,
   typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
   typename DerivedMu, typename DerivedLam,
-    typename DerivedFMu, typename DerivedFLam,
+  typename DerivedFMu, typename DerivedFLam,
   typename ScalarMu, typename ScalarLam>
-  IGSIM_INLINE void sim::elastic_neohookean(
-    const Eigen::PlainObjectBase<DerivedV>& V,
-    const Eigen::PlainObjectBase<DerivedT>& T,
-    const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
-    const Eigen::PlainObjectBase<DerivedW>& W,
-    const Eigen::PlainObjectBase<DerivedMu>& _Mu,
-    const Eigen::PlainObjectBase<DerivedLam>& _Lam,
-    Eigen::PlainObjectBase<DerivedFMu>& fmu,
-    Eigen::PlainObjectBase<DerivedFLam>& flam,
-    Eigen::SparseMatrix<ScalarMu>& Kmu,
-    Eigen::SparseMatrix<ScalarLam>& Klam)
+IGSIM_INLINE void sim::elastic_neohookean(
+  const Eigen::PlainObjectBase<DerivedV>& V,
+  const Eigen::PlainObjectBase<DerivedT>& T,
+  const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
+  const Eigen::PlainObjectBase<DerivedW>& W,
+  const Eigen::PlainObjectBase<DerivedMu>& _Mu,
+  const Eigen::PlainObjectBase<DerivedLam>& _Lam,
+  Eigen::PlainObjectBase<DerivedFMu>& fmu,
+  Eigen::PlainObjectBase<DerivedFLam>& flam,
+  Eigen::SparseMatrix<ScalarMu>& Kmu,
+  Eigen::SparseMatrix<ScalarLam>& Klam)
 {
   using namespace std;
   assert(V.cols() == 3 && "Vertices dim must be 3");
@@ -439,133 +733,6 @@ template <
 
   Kmu.setFromTriplets(Kmu_coeff.begin(), Kmu_coeff.end());
   Klam.setFromTriplets(Klam_coeff.begin(), Klam_coeff.end());
-}
-
-template <
-  typename DerivedV, typename DerivedT, 
-  typename DerivedBm_T, typename DerivedBm_A, typename DerivedW>
-IGSIM_INLINE void sim::elastic_neohookean(
-  const Eigen::PlainObjectBase<DerivedV>& V,
-  const Eigen::PlainObjectBase<DerivedT>& T,
-  std::vector<DerivedBm_T, DerivedBm_A>& Bm,
-  Eigen::PlainObjectBase<DerivedW>& W)
-{
-  assert(V.cols() == 3 && "Vertices dim must be 3");
-  assert(T.cols() == 4 && "Tetra dim must be 4");
-  typedef Eigen::Matrix3d Mat3;
-  
-  Bm.clear();
-  Bm.reserve(T.rows());
-  W = DerivedW::Zero(T.rows());
-
-  for(int i = 0; i < T.rows(); i++)
-  {
-    Mat3 Ds_t;
-    Ds_t << V.row(T(i, 0)), V.row(T(i, 1)), V.row(T(i, 2));
-    Ds_t.rowwise() -= V.row(T(i, 3));
-
-    W(i) = Ds_t.determinant() / 6.0;
-    DerivedBm_T Bm_tmp = Ds_t.inverse().transpose();
-    
-    Bm.push_back(Bm_tmp);
-  }
-
-  assert( W.minCoeff() > 0 && "negtive volume in W");
-}
-
-template <
-  typename DerivedV, typename DerivedVinit, typename DerivedT,
-  typename DerivedMu, typename DerivedLam,
-  typename DerivedE>
-IGSIM_INLINE void sim::elastic_neohookean(
-  const Eigen::PlainObjectBase<DerivedV>& V,
-  const Eigen::PlainObjectBase<DerivedVinit>& Vinit,
-  const Eigen::PlainObjectBase<DerivedT>& T, 
-  const Eigen::PlainObjectBase<DerivedMu>& Mu,
-  const Eigen::PlainObjectBase<DerivedLam>& Lam,
-  DerivedE&  energy)
-{
-  typedef Eigen::Matrix3d Mat3;
-  std::vector<Mat3, Eigen::aligned_allocator<Mat3>> Bm;
-  Eigen::VectorXd W;
-
-  /* precomputing Bm and W */
-  elastic_neohookean(Vinit, T, Bm, W);
-
-  elastic_neohookean(V, T, Bm, W, Mu, Lam, energy);
-}
-
-template <
-  typename DerivedV, typename DerivedVinit, typename DerivedT,
-  typename DerivedMu, typename DerivedLam,
-  typename DerivedE, typename DerivedF>
-IGSIM_INLINE void sim::elastic_neohookean(
-  const Eigen::PlainObjectBase<DerivedV>& V,
-  const Eigen::PlainObjectBase<DerivedVinit>& Vinit,
-  const Eigen::PlainObjectBase<DerivedT>& T, 
-  const Eigen::PlainObjectBase<DerivedMu>& Mu,
-  const Eigen::PlainObjectBase<DerivedLam>& Lam,
-  DerivedE&  energy,
-  Eigen::PlainObjectBase<DerivedF>& f)
-{
-  typedef Eigen::Matrix3d Mat3;
-  std::vector<Mat3, Eigen::aligned_allocator<Mat3>> Bm;
-  Eigen::VectorXd W;
-
-  /* precomputing Bm and W */
-  elastic_neohookean(Vinit, T, Bm, W);
-
-  elastic_neohookean(V, T, Bm, W, Mu, Lam, energy, f);
-}
-
-template <
-  typename DerivedV, typename DerivedVinit, typename DerivedT,
-  typename DerivedMu, typename DerivedLam,
-  typename DerivedE, typename DerivedF, typename ScalarK>
-IGSIM_INLINE void sim::elastic_neohookean(
-  const Eigen::PlainObjectBase<DerivedV>& V,
-  const Eigen::PlainObjectBase<DerivedVinit>& Vinit,
-  const Eigen::PlainObjectBase<DerivedT>& T, 
-  const Eigen::PlainObjectBase<DerivedMu>& Mu,
-  const Eigen::PlainObjectBase<DerivedLam>& Lam,
-  DerivedE&  energy,
-  Eigen::PlainObjectBase<DerivedF>& f,
-  Eigen::SparseMatrix<ScalarK>& K)
-{
-  typedef Eigen::Matrix3d Mat3;
-  std::vector<Mat3, Eigen::aligned_allocator<Mat3>> Bm;
-  Eigen::VectorXd W;
-
-  /* precomputing Bm and W */
-  elastic_neohookean(Vinit, T, Bm, W);
-
-  elastic_neohookean(V, T, Bm, W, Mu, Lam, energy, f, K);
-}
-
-template <
-  typename DerivedV, typename DerivedVinit, typename DerivedT,
-  typename DerivedMu, typename DerivedLam,
-  typename DerivedFMu, typename DerivedFLam,
-  typename ScalarMu, typename ScalarLam>
-IGSIM_INLINE void sim::elastic_neohookean(
-  const Eigen::PlainObjectBase<DerivedV>& V,
-  const Eigen::PlainObjectBase<DerivedVinit>& Vinit,
-  const Eigen::PlainObjectBase<DerivedT>& T, 
-  const Eigen::PlainObjectBase<DerivedMu>& Mu,
-  const Eigen::PlainObjectBase<DerivedLam>& Lam,
-  Eigen::PlainObjectBase<DerivedFMu>& fmu,
-  Eigen::PlainObjectBase<DerivedFLam>& flam,
-  Eigen::SparseMatrix<ScalarMu>& Kmu,
-  Eigen::SparseMatrix<ScalarLam>& Klam)
-{
-  typedef Eigen::Matrix3d Mat3;
-  std::vector<Mat3, Eigen::aligned_allocator<Mat3>> Bm;
-  Eigen::VectorXd W;
-
-  /* precomputing Bm and W */
-  elastic_neohookean(Vinit, T, Bm, W);
-
-  elastic_neohookean(V, T, Bm, W, Mu, Lam, fmu, flam, Kmu, Klam);
 }
 
 #ifdef IGSIM_STATIC_LIBRARY
