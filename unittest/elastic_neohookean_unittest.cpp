@@ -82,29 +82,29 @@ TEST(elastic_neohookean, force)
 
   for (int i = 0; i < REPEAT_N; i++)
   {
-    dMat dV = 0.3 * dMat::Random(V.rows(), V.cols());
+    dMat dV = 0.2 * dMat::Random(V.rows(), V.cols());
     dMat V_curr = V + dV;
 
     dMat dV2 = dMat::Random(V.rows(), V.cols());
-    dV2 *= 1e-5 / dV2.norm();
+    dV2 *= 3e-6 / dV2.norm();
     dMat V_targ = V_curr + dV2;
 
     dVec mu = dVec::Random(T.rows());
     dVec lam = dVec::Random(T.rows());
 
     double e_curr, e_targ;
-    dMat f_curr;
+    dMat grad_curr;
 
-    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, e_curr, f_curr);
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, e_curr, grad_curr);
     sim::elastic_neohookean(V_targ, T, Bm, W, mu, lam, e_targ);
 
     double de = e_targ - e_curr;
 
-    double de_exp = -(f_curr.cwiseProduct(dV2)).sum();
+    double de_exp = grad_curr.cwiseProduct(dV2).sum();
 
     double de_err = de - de_exp;
 
-    EXPECT_LT(abs(de_err / de), 3e-4);
+    EXPECT_LT(abs(de_err / de), 4e-4);
   }
 }
 
@@ -123,23 +123,23 @@ TEST(elastic_neohookean, stiffness)
     dMat V_curr = V + dV;
 
     dMat dV2 = dMat::Random(V.rows(), V.cols());
-    dV2 *= 1e-5 / dV2.norm();
+    dV2 *= 3e-6 / dV2.norm();
     dMat V_targ = V_curr + dV2;
 
     dVec mu = dVec::Random(T.rows());
     dVec lam = dVec::Random(T.rows());
 
     double e_curr, e_targ;
-    dMat f_curr, f_targ;
-    SpMat K_curr;
-    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, e_curr, f_curr, K_curr);
-    sim::elastic_neohookean(V_targ, T, Bm, W, mu, lam, e_targ, f_targ);
+    dMat grad_curr, grad_targ;
+    SpMat H_curr;
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, e_curr, grad_curr, H_curr);
+    sim::elastic_neohookean(V_targ, T, Bm, W, mu, lam, e_targ, grad_targ);
 
-    dMat df = f_targ - f_curr;
+    dMat df = grad_targ - grad_curr;
     df.resize(df.size(), 1);
 
     dV2.resize(dV2.size(), 1);
-    dMat df_exp = K_curr * dV2;
+    dMat df_exp = H_curr * dV2;
 
     dVec df_err = df - df_exp;
 
@@ -147,6 +147,39 @@ TEST(elastic_neohookean, stiffness)
   }
 }
 
+TEST(elastic_neohookean, basis)
+{
+  dMat V;
+  iMat T;
+  init_tetmesh(V, T);
+  std::vector<dMat3> Bm;
+  dVec W;
+  sim::elastic_neohookean(V, T, Bm, W);
+
+  for (int i = 0; i < REPEAT_N; i++)
+  {
+    dMat dV = 0.1 * dMat::Random(V.rows(), V.cols());
+    dMat V_curr = V + dV;
+
+    dVec mu = dVec::Random(T.rows());
+    dVec lam = dVec::Random(T.rows());
+
+    double  e_targ;
+    dMat grad_targ;
+    SpMat hess_targ;
+
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, e_targ, grad_targ, hess_targ);
+
+    dMat basis = dMat::Random(grad_targ.size(), 10);
+    dMat hess_basis;
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, basis, 0, T.rows(), e_targ, grad_targ, hess_basis);
+
+    dMat hess_gt = basis.transpose() * hess_targ * basis;
+    dMat dhess = hess_gt - hess_basis;
+
+    EXPECT_LT(dhess.norm(), 1e-10);
+  }
+}
 TEST(elastic_neohookean, dparam)
 {
   dMat V;
@@ -171,14 +204,14 @@ TEST(elastic_neohookean, dparam)
     dVec lam_targ = lam + dlam;
 
     double e_curr, e_targ;
-    dMat F_curr, F_targ;
+    dMat grad_curr, grad_targ;
 
-    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, e_curr, F_curr);
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu, lam, e_curr, grad_curr);
 
-    sim::elastic_neohookean(V_curr, T, Bm, W, mu_targ, lam_targ, e_targ, F_targ);
+    sim::elastic_neohookean(V_curr, T, Bm, W, mu_targ, lam_targ, e_targ, grad_targ);
 
     double de = e_targ - e_curr;
-    dMat dF = F_targ - F_curr;
+    dMat dF = -(grad_targ - grad_curr);
     dF.resize(dF.size(), 1);
     dVec dF_vec = dF.col(0);
 

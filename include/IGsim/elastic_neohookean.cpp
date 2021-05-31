@@ -114,9 +114,9 @@ IGSIM_INLINE void sim::elastic_neohookean(
   int start = 0;
   int num = T.rows();
   std::vector<Eigen::Triplet<ScalarH>> hess_vec;
-  hess_vec.reserve(144*num);
   elastic_neohookean(V, T, Bm, W, _Mu, _Lam, start, num, energy, grad, hess_vec);
   H.setZero();
+  H.resize(V.size(), V.size());
   H.setFromTriplets(hess_vec.begin(), hess_vec.end());
   H.makeCompressed();
 }
@@ -250,6 +250,10 @@ IGSIM_INLINE void sim::elastic_neohookean(
   int end = start + num;
   assert(end <= T.rows() && "start + num excceeds max T rows");
 
+  energy = 0;
+  grad.resizeLike(V);
+  grad.setZero();
+
   for (int i = start; i < end; i++)
   {
     /* compute deformation pos Ds = [v0-v3, v1-v3, v2-v3] */
@@ -332,6 +336,12 @@ IGSIM_INLINE void sim::elastic_neohookean(
   /* loop for of each tet */
   int end = start + num;
   assert(end <= T.rows() && "start + num excceeds max T rows");
+
+  energy = 0;
+  grad.resizeLike(V);
+  grad.setZero();
+  hess_vec.clear();
+  hess_vec.reserve(144 * num);
 
   for (int i = start; i < end; i++)
   {
@@ -436,7 +446,7 @@ template<
   typename DerivedBm_T, typename DerivedBm_A, typename DerivedW,
   typename DerivedMu, typename DerivedLam, typename DerivedB,
   typename DerivedE, typename DerivedG, typename DerivedH>
-IGSIM_INLINE void elastic_neohookean(
+IGSIM_INLINE void sim::elastic_neohookean(
   const Eigen::PlainObjectBase<DerivedV>& V,
   const Eigen::PlainObjectBase<DerivedT>& T,
   const std::vector<DerivedBm_T, DerivedBm_A>& Bm,
@@ -487,8 +497,9 @@ IGSIM_INLINE void elastic_neohookean(
 
   elastic_neohookean(V, T, Bm, W, Mu, Lam, start, num, energy, grad);
 
+  hess.setZero(basis.cols(), basis.cols());
   int num_core = 8;
-  int block = num / num_core;
+  int block = 1 + num / num_core;
   std::vector<DerivedH> hess_tmp;
   hess_tmp.clear();
   for (int i = 0; i < num_core; i++)
